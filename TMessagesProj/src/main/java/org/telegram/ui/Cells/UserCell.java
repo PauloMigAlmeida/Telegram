@@ -127,13 +127,17 @@ public class UserCell extends FrameLayout {
         TLRPC.Chat currentChat = null;
         if (currentObject instanceof TLRPC.User) {
             currentUser = (TLRPC.User) currentObject;
-            if (currentUser.photo != null) {
-                photo = currentUser.photo.photo_small;
+            if(BiometryController.getInstance().isUnlocked()){
+                if (currentUser.photo != null) {
+                    photo = currentUser.photo.photo_small;
+                }
             }
         } else {
             currentChat = (TLRPC.Chat) currentObject;
-            if (currentChat.photo != null) {
-                photo = currentChat.photo.photo_small;
+            if(BiometryController.getInstance().isUnlocked()){
+                if (currentChat.photo != null) {
+                    photo = currentChat.photo.photo_small;
+                }
             }
         }
 
