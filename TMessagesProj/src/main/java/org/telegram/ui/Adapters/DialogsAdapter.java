@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Adapters;
@@ -46,7 +46,7 @@ public class DialogsAdapter extends RecyclerView.Adapter {
 
     public boolean isDataSetChanged() {
         int current = currentCount;
-        return current != getItemCount();
+        return current != getItemCount() || current == 1;
     }
 
     private ArrayList<TLRPC.Dialog> getDialogsArray() {
@@ -82,6 +82,13 @@ public class DialogsAdapter extends RecyclerView.Adapter {
     }
 
     @Override
+    public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
+        if (holder.itemView instanceof DialogCell) {
+            ((DialogCell) holder.itemView).checkCurrentDialogIndex();
+        }
+    }
+
+    @Override
     public long getItemId(int i) {
         return i;
     }
@@ -94,6 +101,7 @@ public class DialogsAdapter extends RecyclerView.Adapter {
         } else if (viewType == 1) {
             view = new LoadingCell(mContext);
         }
+        view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
         return new Holder(view);
     }
 

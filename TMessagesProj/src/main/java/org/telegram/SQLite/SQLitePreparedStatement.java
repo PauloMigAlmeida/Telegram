@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.SQLite;
@@ -133,6 +133,10 @@ public class SQLitePreparedStatement {
 
     public void bindLong(int index, long value) throws SQLiteException {
         bindLong(sqliteStatementHandle, index, value);
+    }
+
+    public void bindNull(int index) throws SQLiteException {
+        bindNull(sqliteStatementHandle, index);
     }
 
 	native void bindByteBuffer(int statementHandle, int index, ByteBuffer value, int length) throws SQLiteException;

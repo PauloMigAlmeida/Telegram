@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger.query;
@@ -179,7 +179,7 @@ public class BotQuery {
     }
 
     public static void putBotInfo(final TLRPC.BotInfo botInfo) {
-        if (botInfo == null || botInfo instanceof TLRPC.TL_botInfoEmpty) {
+        if (botInfo == null) {
             return;
         }
         botInfos.put(botInfo.user_id, botInfo);

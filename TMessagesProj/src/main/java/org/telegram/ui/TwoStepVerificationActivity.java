@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 3.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -27,7 +27,6 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.EditText;
@@ -465,9 +464,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     }
 
     @Override
-    public void onOpenAnimationEnd() {
-        super.onOpenAnimationEnd();
-        if (type == 1) {
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+        if (isOpen && type == 1) {
             AndroidUtilities.showKeyboard(passwordEditText);
         }
     }
@@ -682,8 +680,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         if (text == null || text.length() < 3) {
             return false;
         }
-        int dot = text.lastIndexOf(".");
-        int dog = text.lastIndexOf("@");
+        int dot = text.lastIndexOf('.');
+        int dog = text.lastIndexOf('@');
         return !(dot < 0 || dog < 0 || dot < dog);
     }
 

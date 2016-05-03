@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -16,8 +16,10 @@ import android.content.ContentProviderResult;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.BaseColumns;
 import android.provider.ContactsContract;
 import android.text.TextUtils;
@@ -54,7 +56,9 @@ public class ContactsController {
     private int loadingDeleteInfo = 0;
     private int deleteAccountTTL;
     private int loadingLastSeenInfo = 0;
+    private int loadingGroupInfo = 0;
     private ArrayList<TLRPC.PrivacyRule> privacyRules = null;
+    private ArrayList<TLRPC.PrivacyRule> groupPrivacyRules = null;
 
     public static class Contact {
         public int id;
@@ -158,6 +162,7 @@ public class ContactsController {
         loadingDeleteInfo = 0;
         deleteAccountTTL = 0;
         loadingLastSeenInfo = 0;
+        loadingGroupInfo = 0;
         privacyRules = null;
     }
 
@@ -168,15 +173,15 @@ public class ContactsController {
         if (!updatingInviteText && (inviteText == null || time + 86400 < (int)(System.currentTimeMillis() / 1000))) {
             updatingInviteText = true;
             TLRPC.TL_help_getInviteText req = new TLRPC.TL_help_getInviteText();
-            req.lang_code = LocaleController.getLocaleString(LocaleController.getInstance().getSystemDefaultLocale());
+            req.lang_code = LocaleController.getLocaleStringIso639();
             if (req.lang_code.length() == 0) {
                 req.lang_code = "en";
             }
             ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(TLObject response, TLRPC.TL_error error) {
-                    if (error == null) {
-                        final TLRPC.TL_help_inviteText res = (TLRPC.TL_help_inviteText)response;
+                    if (response != null) {
+                        final TLRPC.TL_help_inviteText res = (TLRPC.TL_help_inviteText) response;
                         if (res.message.length() != 0) {
                             AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
@@ -206,8 +211,8 @@ public class ContactsController {
         try {
             accounts = am.getAccountsByType("org.telegram.account");
             if (accounts != null && accounts.length > 0) {
-                for (Account c : accounts) {
-                    am.removeAccount(c, null, null);
+                for (int a = 0; a < accounts.length; a++) {
+                    am.removeAccount(accounts[a], null, null);
                 }
             }
         } catch (Exception e) {
@@ -219,7 +224,7 @@ public class ContactsController {
         if (UserConfig.isClientActivated()) {
             if (accounts.length == 1) {
                 Account acc = accounts[0];
-                if (!acc.name.equals(UserConfig.getCurrentUser().phone)) {
+                if (!acc.name.equals("" + UserConfig.getClientUserId())) {
                     recreateAccount = true;
                 } else {
                     currentAccount = acc;
@@ -234,12 +239,16 @@ public class ContactsController {
             }
         }
         if (recreateAccount) {
-            for (Account c : accounts) {
-                am.removeAccount(c, null, null);
+            try {
+                for (int a = 0; a < accounts.length; a++) {
+                    am.removeAccount(accounts[a], null, null);
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
             }
             if (UserConfig.isClientActivated()) {
                 try {
-                    currentAccount = new Account(UserConfig.getCurrentUser().phone, "org.telegram.messenger");
+                    currentAccount = new Account("" + UserConfig.getClientUserId(), "org.telegram.messenger");
                     am.addAccountExplicitly(currentAccount, "", null);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -252,8 +261,8 @@ public class ContactsController {
         try {
             AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
             Account[] accounts = am.getAccountsByType("org.telegram.messenger");
-            for (Account c : accounts) {
-                am.removeAccount(c, null, null);
+            for (int a = 0; a < accounts.length; a++) {
+                am.removeAccount(accounts[a], null, null);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -275,6 +284,9 @@ public class ContactsController {
     private boolean checkContactsInternal() {
         boolean reload = false;
         try {
+            if (!hasContactsPermission()) {
+                return false;
+            }
             ContentResolver cr = ApplicationLoader.applicationContext.getContentResolver();
             Cursor pCur = null;
             try {
@@ -329,6 +341,9 @@ public class ContactsController {
     private HashMap<Integer, Contact> readContactsFromPhoneBook() {
         HashMap<Integer, Contact> contactsMap = new HashMap<>();
         try {
+            if (!hasContactsPermission()) {
+                return contactsMap;
+            }
             ContentResolver cr = ApplicationLoader.applicationContext.getContentResolver();
 
             HashMap<String, Contact> shortContacts = new HashMap<>();
@@ -1036,7 +1051,7 @@ public class ContactsController {
                                 sortedSectionsArray.add(key);
                             }
                             arr.add(value);
-                            if ((user.flags & TLRPC.USER_FLAG_MUTUAL_CONTACT) != 0) {
+                            if (user.mutual_contact) {
                                 arr = sectionsDictMutual.get(key);
                                 if (arr == null) {
                                     arr = new ArrayList<>();
@@ -1272,8 +1287,36 @@ public class ContactsController {
         sortedUsersSectionsArray = sortedSectionsArray;
     }
 
+    private boolean hasContactsPermission() {
+        if (Build.VERSION.SDK_INT >= 23) {
+            return ApplicationLoader.applicationContext.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED;
+        }
+        Cursor cursor = null;
+        try {
+            ContentResolver cr = ApplicationLoader.applicationContext.getContentResolver();
+            cursor = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, projectionPhones, null, null, null);
+            if (cursor == null || cursor.getCount() == 0) {
+                return false;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        } finally {
+            try {
+                if (cursor != null) {
+                    cursor.close();
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+        }
+        return true;
+    }
+
     private void performWriteContactsToPhoneBookInternal(ArrayList<TLRPC.TL_contact> contactsArray) {
         try {
+            if (!hasContactsPermission()) {
+                return;
+            }
             Uri rawContactUri = ContactsContract.RawContacts.CONTENT_URI.buildUpon().appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_NAME, currentAccount.name).appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_TYPE, currentAccount.type).build();
             Cursor c1 = ApplicationLoader.applicationContext.getContentResolver().query(rawContactUri, new String[]{BaseColumns._ID, ContactsContract.RawContacts.SYNC2}, null, null, null);
             HashMap<Integer, Long> bookContacts = new HashMap<>();
@@ -1283,7 +1326,8 @@ public class ContactsController {
                 }
                 c1.close();
 
-                for (TLRPC.TL_contact u : contactsArray) {
+                for (int a = 0; a < contactsArray.size(); a++) {
+                    TLRPC.TL_contact u = contactsArray.get(a);
                     if (!bookContacts.containsKey(u.user_id)) {
                         TLRPC.User user = MessagesController.getInstance().getUser(u.user_id);
                         addContactToPhoneBook(user, false);
@@ -1475,6 +1519,9 @@ public class ContactsController {
         if (currentAccount == null || user == null || user.phone == null || user.phone.length() == 0) {
             return -1;
         }
+        if (!hasContactsPermission()) {
+            return -1;
+        }
         long res = -1;
         synchronized (observerLock) {
             ignoreChanges = true;
@@ -1522,7 +1569,9 @@ public class ContactsController {
         query.add(builder.build());
         try {
             ContentProviderResult[] result = contentResolver.applyBatch(ContactsContract.AUTHORITY, query);
-            res = Long.parseLong(result[0].uri.getLastPathSegment());
+            if (result != null && result.length > 0 && result[0].uri != null) {
+                res = Long.parseLong(result[0].uri.getLastPathSegment());
+            }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -1533,11 +1582,14 @@ public class ContactsController {
     }
 
     private void deleteContactFromPhoneBook(int uid) {
-        ContentResolver contentResolver = ApplicationLoader.applicationContext.getContentResolver();
+        if (!hasContactsPermission()) {
+            return;
+        }
         synchronized (observerLock) {
             ignoreChanges = true;
         }
         try {
+            ContentResolver contentResolver = ApplicationLoader.applicationContext.getContentResolver();
             Uri rawContactUri = ContactsContract.RawContacts.CONTENT_URI.buildUpon().appendQueryParameter(ContactsContract.CALLER_IS_SYNCADAPTER, "true").appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_NAME, currentAccount.name).appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_TYPE, currentAccount.type).build();
             int value = contentResolver.delete(rawContactUri, ContactsContract.RawContacts.SYNC2 + " = " + uid, null);
         } catch (Exception e) {
@@ -1600,7 +1652,8 @@ public class ContactsController {
                     }
                 }*/
 
-                for (final TLRPC.User u : res.users) {
+                for (int a = 0; a < res.users.size(); a++) {
+                    final TLRPC.User u = res.users.get(a);
                     Utilities.phoneBookQueue.postRunnable(new Runnable() {
                         @Override
                         public void run() {
@@ -1810,6 +1863,30 @@ public class ContactsController {
                 }
             });
         }
+        if (loadingGroupInfo == 0) {
+            loadingGroupInfo = 1;
+            TLRPC.TL_account_getPrivacy req = new TLRPC.TL_account_getPrivacy();
+            req.key = new TLRPC.TL_inputPrivacyKeyChatInvite();
+            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                @Override
+                public void run(final TLObject response, final TLRPC.TL_error error) {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (error == null) {
+                                TLRPC.TL_account_privacyRules rules = (TLRPC.TL_account_privacyRules) response;
+                                MessagesController.getInstance().putUsers(rules.users, false);
+                                groupPrivacyRules = rules.rules;
+                                loadingGroupInfo = 2;
+                            } else {
+                                loadingGroupInfo = 0;
+                            }
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.privacyRulesUpdated);
+                        }
+                    });
+                }
+            });
+        }
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.privacyRulesUpdated);
     }
 
@@ -1829,12 +1906,24 @@ public class ContactsController {
         return loadingLastSeenInfo != 2;
     }
 
-    public ArrayList<TLRPC.PrivacyRule> getPrivacyRules() {
-        return privacyRules;
+    public boolean getLoadingGroupInfo() {
+        return loadingGroupInfo != 2;
     }
 
-    public void setPrivacyRules(ArrayList<TLRPC.PrivacyRule> rules) {
-        privacyRules = rules;
+    public ArrayList<TLRPC.PrivacyRule> getPrivacyRules(boolean isGroup) {
+        if (isGroup) {
+            return groupPrivacyRules;
+        } else {
+            return privacyRules;
+        }
+    }
+
+    public void setPrivacyRules(ArrayList<TLRPC.PrivacyRule> rules, boolean isGroup) {
+        if (isGroup) {
+            groupPrivacyRules = rules;
+        } else {
+            privacyRules = rules;
+        }
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.privacyRulesUpdated);
         reloadContactsStatuses();
     }

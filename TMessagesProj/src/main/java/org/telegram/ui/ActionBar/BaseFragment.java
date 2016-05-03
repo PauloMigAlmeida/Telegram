@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.ActionBar;
@@ -17,8 +17,8 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 
+import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
 
 public class BaseFragment {
@@ -41,6 +41,14 @@ public class BaseFragment {
     public BaseFragment(Bundle args) {
         arguments = args;
         classGuid = ConnectionsManager.getInstance().generateClassGuid();
+    }
+
+    public ActionBar getActionBar() {
+        return actionBar;
+    }
+
+    public View getFragmentView() {
+        return fragmentView;
     }
 
     public View createView(Context context) {
@@ -107,12 +115,17 @@ public class BaseFragment {
                 }
             }
             if (parentLayout != null && actionBar == null) {
-                actionBar = new ActionBar(parentLayout.getContext());
+                actionBar = createActionBar(parentLayout.getContext());
                 actionBar.parentFragment = this;
-                actionBar.setBackgroundColor(0xff54759e);
-                actionBar.setItemsBackground(R.drawable.bar_selector);
             }
         }
+    }
+
+    protected ActionBar createActionBar(Context context) {
+        ActionBar actionBar = new ActionBar(context);
+        actionBar.setBackgroundColor(Theme.ACTION_BAR_COLOR);
+        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_SELECTOR_COLOR);
+        return actionBar;
     }
 
     public void finishFragment() {
@@ -154,7 +167,7 @@ public class BaseFragment {
             actionBar.onPause();
         }
         try {
-            if (visibleDialog != null && visibleDialog.isShowing()) {
+            if (visibleDialog != null && visibleDialog.isShowing() && dismissDialogOnPause(visibleDialog)) {
                 visibleDialog.dismiss();
                 visibleDialog = null;
             }
@@ -172,6 +185,10 @@ public class BaseFragment {
     }
 
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
+
+    }
+
+    public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
 
     }
 
@@ -208,6 +225,10 @@ public class BaseFragment {
         }
     }
 
+    public boolean dismissDialogOnPause(Dialog dialog) {
+        return true;
+    }
+
     public void onBeginSlide() {
         try {
             if (visibleDialog != null && visibleDialog.isShowing()) {
@@ -222,11 +243,11 @@ public class BaseFragment {
         }
     }
 
-    protected void onOpenAnimationEnd() {
+    protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {
 
     }
 
-    protected void onOpenAnimationStart() {
+    protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
 
     }
 
@@ -234,12 +255,12 @@ public class BaseFragment {
 
     }
 
-    public void onLowMemory() {
-
+    protected AnimatorSetProxy onCustomTransitionAnimation(boolean isOpen, final Runnable callback) {
+        return null;
     }
 
-    public boolean needAddActionBar() {
-        return true;
+    public void onLowMemory() {
+
     }
 
     public Dialog showDialog(Dialog dialog) {

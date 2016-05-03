@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.4.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -16,19 +16,22 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
-import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
@@ -56,6 +59,7 @@ import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
 import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.messenger.AnimationCompat.ViewProxy;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.NumberPicker;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -74,13 +78,16 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 public class AndroidUtilities {
 
     private static final Hashtable<String, Typeface> typefaceCache = new Hashtable<>();
     private static int prevOrientation = -10;
     private static boolean waitingForSms = false;
+    private static boolean waitingForCall = false;
     private static final Object smsLock = new Object();
+    private static final Object callLock = new Object();
 
     public static int statusBarHeight = 0;
     public static float density = 1;
@@ -92,10 +99,137 @@ public class AndroidUtilities {
     private static Boolean isTablet = null;
     private static int adjustOwnerClassGuid = 0;
 
+    public static Pattern WEB_URL = null;
+    static {
+        try {
+            final String GOOD_IRI_CHAR = "a-zA-Z0-9\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF";
+            final Pattern IP_ADDRESS = Pattern.compile(
+                    "((25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\\.(25[0-5]|2[0-4]"
+                            + "[0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]"
+                            + "[0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}"
+                            + "|[1-9][0-9]|[0-9]))");
+            final String IRI = "[" + GOOD_IRI_CHAR + "]([" + GOOD_IRI_CHAR + "\\-]{0,61}[" + GOOD_IRI_CHAR + "]){0,1}";
+            final String GOOD_GTLD_CHAR = "a-zA-Z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF";
+            final String GTLD = "[" + GOOD_GTLD_CHAR + "]{2,63}";
+            final String HOST_NAME = "(" + IRI + "\\.)+" + GTLD;
+            final Pattern DOMAIN_NAME = Pattern.compile("(" + HOST_NAME + "|" + IP_ADDRESS + ")");
+            WEB_URL = Pattern.compile(
+                    "((?:(http|https|Http|Https):\\/\\/(?:(?:[a-zA-Z0-9\\$\\-\\_\\.\\+\\!\\*\\'\\(\\)"
+                            + "\\,\\;\\?\\&\\=]|(?:\\%[a-fA-F0-9]{2})){1,64}(?:\\:(?:[a-zA-Z0-9\\$\\-\\_"
+                            + "\\.\\+\\!\\*\\'\\(\\)\\,\\;\\?\\&\\=]|(?:\\%[a-fA-F0-9]{2})){1,25})?\\@)?)?"
+                            + "(?:" + DOMAIN_NAME + ")"
+                            + "(?:\\:\\d{1,5})?)" // plus option port number
+                            + "(\\/(?:(?:[" + GOOD_IRI_CHAR + "\\;\\/\\?\\:\\@\\&\\=\\#\\~"  // plus option query params
+                            + "\\-\\.\\+\\!\\*\\'\\(\\)\\,\\_])|(?:\\%[a-fA-F0-9]{2}))*)?"
+                            + "(?:\\b|$)");
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
     static {
         density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
         leftBaseline = isTablet() ? 80 : 72;
         checkDisplaySize();
+    }
+
+    public static int[] calcDrawableColor(Drawable drawable) {
+        int bitmapColor = 0xff000000;
+        int result[] = new int[2];
+        try {
+            if (drawable instanceof BitmapDrawable) {
+                Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
+                if (bitmap != null) {
+                    Bitmap b = Bitmaps.createScaledBitmap(bitmap, 1, 1, true);
+                    if (b != null) {
+                        bitmapColor = b.getPixel(0, 0);
+                        b.recycle();
+                    }
+                }
+            } else if (drawable instanceof ColorDrawable) {
+                if (Build.VERSION.SDK_INT >= 11) {
+                    bitmapColor = ((ColorDrawable) drawable).getColor();
+                } else {
+                    bitmapColor = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).getInt("selectedColor", 0xff000000);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+
+        double[] hsv = rgbToHsv((bitmapColor >> 16) & 0xff, (bitmapColor >> 8) & 0xff, bitmapColor & 0xff);
+        hsv[1] = Math.min(1.0, hsv[1] + 0.05 + 0.1 * (1.0 - hsv[1]));
+        hsv[2] = Math.max(0, hsv[2] * 0.65);
+        int rgb[] = hsvToRgb(hsv[0], hsv[1], hsv[2]);
+        result[0] = Color.argb(0x66, rgb[0], rgb[1], rgb[2]);
+        result[1] = Color.argb(0x88, rgb[0], rgb[1], rgb[2]);
+        return result;
+    }
+
+    private static double[] rgbToHsv(int r, int g, int b) {
+        double rf = r / 255.0;
+        double gf = g / 255.0;
+        double bf = b / 255.0;
+        double max = (rf > gf && rf > bf) ? rf : (gf > bf) ? gf : bf;
+        double min = (rf < gf && rf < bf) ? rf : (gf < bf) ? gf : bf;
+        double h, s;
+        double d = max - min;
+        s = max == 0 ? 0 : d / max;
+        if (max == min) {
+            h = 0;
+        } else {
+            if (rf > gf && rf > bf) {
+                h = (gf - bf) / d + (gf < bf ? 6 : 0);
+            } else if (gf > bf) {
+                h = (bf - rf) / d + 2;
+            } else {
+                h = (rf - gf) / d + 4;
+            }
+            h /= 6;
+        }
+        return new double[]{h, s, max};
+    }
+
+    private static int[] hsvToRgb(double h, double s, double v) {
+        double r = 0, g = 0, b = 0;
+        double i = (int) Math.floor(h * 6);
+        double f = h * 6 - i;
+        double p = v * (1 - s);
+        double q = v * (1 - f * s);
+        double t = v * (1 - (1 - f) * s);
+        switch ((int) i % 6) {
+            case 0:
+                r = v;
+                g = t;
+                b = p;
+                break;
+            case 1:
+                r = q;
+                g = v;
+                b = p;
+                break;
+            case 2:
+                r = p;
+                g = v;
+                b = t;
+                break;
+            case 3:
+                r = p;
+                g = q;
+                b = v;
+                break;
+            case 4:
+                r = t;
+                g = p;
+                b = v;
+                break;
+            case 5:
+                r = v;
+                g = p;
+                b = q;
+                break;
+        }
+        return new int[]{(int) (r * 255), (int) (g * 255), (int) (b * 255)};
     }
 
     public static void requestAdjustResize(Activity activity, int classGuid) {
@@ -115,8 +249,36 @@ public class AndroidUtilities {
         }
     }
 
+    public static boolean isGoogleMapsInstalled(final BaseFragment fragment) {
+        try {
+            ApplicationLoader.applicationContext.getPackageManager().getApplicationInfo("com.google.android.apps.maps", 0);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            if (fragment.getParentActivity() == null) {
+                return false;
+            }
+            AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
+            builder.setMessage("Install Google Maps?");
+            builder.setCancelable(true);
+            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.apps.maps"));
+                        fragment.getParentActivity().startActivityForResult(intent, 500);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
+            });
+            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+            fragment.showDialog(builder.create());
+            return false;
+        }
+    }
+
     public static void lockOrientation(Activity activity) {
-        if (activity == null || prevOrientation != -10 || Build.VERSION.SDK_INT < 9) {
+        if (activity == null || prevOrientation != -10) {
             return;
         }
         try {
@@ -125,22 +287,16 @@ public class AndroidUtilities {
             if (manager != null && manager.getDefaultDisplay() != null) {
                 int rotation = manager.getDefaultDisplay().getRotation();
                 int orientation = activity.getResources().getConfiguration().orientation;
-                int SCREEN_ORIENTATION_REVERSE_LANDSCAPE = 8;
-                int SCREEN_ORIENTATION_REVERSE_PORTRAIT = 9;
-                if (Build.VERSION.SDK_INT < 9) {
-                    SCREEN_ORIENTATION_REVERSE_LANDSCAPE = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
-                    SCREEN_ORIENTATION_REVERSE_PORTRAIT = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
-                }
 
                 if (rotation == Surface.ROTATION_270) {
                     if (orientation == Configuration.ORIENTATION_PORTRAIT) {
                         activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                     } else {
-                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
                     }
                 } else if (rotation == Surface.ROTATION_90) {
                     if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_PORTRAIT);
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
                     } else {
                         activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                     }
@@ -152,9 +308,9 @@ public class AndroidUtilities {
                     }
                 } else {
                     if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
                     } else {
-                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_PORTRAIT);
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
                     }
                 }
             }
@@ -164,7 +320,7 @@ public class AndroidUtilities {
     }
 
     public static void unlockOrientation(Activity activity) {
-        if (activity == null || Build.VERSION.SDK_INT < 9) {
+        if (activity == null) {
             return;
         }
         try {
@@ -203,6 +359,20 @@ public class AndroidUtilities {
     public static void setWaitingForSms(boolean value) {
         synchronized (smsLock) {
             waitingForSms = value;
+        }
+    }
+
+    public static boolean isWaitingForCall() {
+        boolean value;
+        synchronized (callLock) {
+            value = waitingForCall;
+        }
+        return value;
+    }
+
+    public static void setWaitingForCall(boolean value) {
+        synchronized (callLock) {
+            waitingForCall = value;
         }
     }
 
@@ -265,7 +435,7 @@ public class AndroidUtilities {
         if (value == 0) {
             return 0;
         }
-        return (int)Math.ceil(density * value);
+        return (int) Math.ceil(density * value);
     }
 
     public static int compare(int lhs, int rhs) {
@@ -304,38 +474,6 @@ public class AndroidUtilities {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
-
-        /*
-        keyboardHidden
-        public static final int KEYBOARDHIDDEN_NO = 1
-        Constant for keyboardHidden, value corresponding to the keysexposed resource qualifier.
-
-        public static final int KEYBOARDHIDDEN_UNDEFINED = 0
-        Constant for keyboardHidden: a value indicating that no value has been set.
-
-        public static final int KEYBOARDHIDDEN_YES = 2
-        Constant for keyboardHidden, value corresponding to the keyshidden resource qualifier.
-
-        hardKeyboardHidden
-        public static final int HARDKEYBOARDHIDDEN_NO = 1
-        Constant for hardKeyboardHidden, value corresponding to the physical keyboard being exposed.
-
-        public static final int HARDKEYBOARDHIDDEN_UNDEFINED = 0
-        Constant for hardKeyboardHidden: a value indicating that no value has been set.
-
-        public static final int HARDKEYBOARDHIDDEN_YES = 2
-        Constant for hardKeyboardHidden, value corresponding to the physical keyboard being hidden.
-
-        keyboard
-        public static final int KEYBOARD_12KEY = 3
-        Constant for keyboard, value corresponding to the 12key resource qualifier.
-
-        public static final int KEYBOARD_NOKEYS = 1
-        Constant for keyboard, value corresponding to the nokeys resource qualifier.
-
-        public static final int KEYBOARD_QWERTY = 2
-        Constant for keyboard, value corresponding to the qwerty resource qualifier.
-         */
     }
 
     public static float getPixelsInCM(float cm, boolean isX) {
@@ -536,7 +674,7 @@ public class AndroidUtilities {
     }
 
     public static int getViewInset(View view) {
-        if (view == null || Build.VERSION.SDK_INT < 21) {
+        if (view == null || Build.VERSION.SDK_INT < 21 || view.getHeight() == AndroidUtilities.displaySize.y || view.getHeight() == AndroidUtilities.displaySize.y - statusBarHeight) {
             return 0;
         }
         try {
@@ -624,11 +762,11 @@ public class AndroidUtilities {
     public static final int FLAG_TAG_COLOR = 4;
     public static final int FLAG_TAG_ALL = FLAG_TAG_BR | FLAG_TAG_BOLD | FLAG_TAG_COLOR;
 
-    public static Spannable replaceTags(String str) {
+    public static SpannableStringBuilder replaceTags(String str) {
         return replaceTags(str, FLAG_TAG_ALL);
     }
 
-    public static Spannable replaceTags(String str, int flag) {
+    public static SpannableStringBuilder replaceTags(String str, int flag) {
         try {
             int start;
             int end;
@@ -766,7 +904,7 @@ public class AndroidUtilities {
     }*/
 
     public static void checkForCrashes(Activity context) {
-        CrashManager.register(context, BuildVars.HOCKEY_APP_HASH, new CrashManagerListener() {
+        CrashManager.register(context, BuildVars.DEBUG_VERSION ? BuildVars.HOCKEY_APP_HASH_DEBUG : BuildVars.HOCKEY_APP_HASH, new CrashManagerListener() {
             @Override
             public boolean includeDeviceData() {
                 return true;
@@ -776,7 +914,7 @@ public class AndroidUtilities {
 
     public static void checkForUpdates(Activity context) {
         if (BuildVars.DEBUG_VERSION) {
-            UpdateManager.register(context, BuildVars.HOCKEY_APP_HASH);
+            UpdateManager.register(context, BuildVars.DEBUG_VERSION ? BuildVars.HOCKEY_APP_HASH_DEBUG : BuildVars.HOCKEY_APP_HASH);
         }
     }
 
@@ -799,12 +937,19 @@ public class AndroidUtilities {
         if (uri == null) {
             return;
         }
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        mediaScanIntent.setData(uri);
-        ApplicationLoader.applicationContext.sendBroadcast(mediaScanIntent);
+        try {
+            Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+            mediaScanIntent.setData(uri);
+            ApplicationLoader.applicationContext.sendBroadcast(mediaScanIntent);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     private static File getAlbumDir() {
+        if (Build.VERSION.SDK_INT >= 23 && ApplicationLoader.applicationContext.checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            return FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE);
+        }
         File storageDir = null;
         if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
             storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Telegram");
@@ -885,7 +1030,11 @@ public class AndroidUtilities {
             cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs, null);
             if (cursor != null && cursor.moveToFirst()) {
                 final int column_index = cursor.getColumnIndexOrThrow(column);
-                return cursor.getString(column_index);
+                String value = cursor.getString(column_index);
+                if (value.startsWith("content://") || !value.startsWith("/") && !value.startsWith("file://")) {
+                    return null;
+                }
+                return value;
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -1049,5 +1198,12 @@ public class AndroidUtilities {
             }
         }
         return true;
+    }
+
+    public static byte[] calcAuthKeyHash(byte[] auth_key) {
+        byte[] sha1 = Utilities.computeSHA1(auth_key);
+        byte[] key_hash = new byte[16];
+        System.arraycopy(sha1, 0, key_hash, 0, 16);
+        return key_hash;
     }
 }

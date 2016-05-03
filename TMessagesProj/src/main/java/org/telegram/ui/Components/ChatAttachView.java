@@ -1,19 +1,23 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
 
+import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -27,19 +31,24 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.R;
-import org.telegram.ui.Adapters.PhotoAttachAdapter;
+import org.telegram.messenger.support.widget.RecyclerView;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.PhotoAttachPhotoCell;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.PhotoViewer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class ChatAttachView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+public class ChatAttachView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
 
     public interface ChatAttachViewDelegate {
         void didPressedButton(int button);
@@ -53,12 +62,13 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
     private RecyclerListView attachPhotoRecyclerView;
     private View lineView;
     private EmptyTextProgressView progressView;
+    private ArrayList<PhotoAttachAdapter.Holder> viewsCache = new ArrayList<>(8);
 
     private float[] distCache = new float[20];
 
     private DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator();
 
-    private boolean loading;
+    private boolean loading = true;
 
     private ChatAttachViewDelegate delegate;
 
@@ -89,9 +99,9 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
             super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(85), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(90), MeasureSpec.EXACTLY));
         }
 
-        public void setTextAndIcon(CharSequence text, int icon) {
+        public void setTextAndIcon(CharSequence text, Drawable drawable) {
             textView.setText(text);
-            imageView.setBackgroundResource(icon);
+            imageView.setBackgroundDrawable(drawable);
         }
     }
 
@@ -99,12 +109,6 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
         super(context);
 
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.albumsDidLoaded);
-        if (MediaController.allPhotosAlbumEntry == null) {
-            if (Build.VERSION.SDK_INT >= 21) {
-                MediaController.loadGalleryPhotosAlbums(0);
-            }
-            loading = true;
-        }
 
         views[8] = attachPhotoRecyclerView = new RecyclerListView(context);
         attachPhotoRecyclerView.setVerticalScrollBarEnabled(true);
@@ -125,21 +129,31 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
         };
         attachPhotoLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
         attachPhotoRecyclerView.setLayoutManager(attachPhotoLayoutManager);
-        photoAttachAdapter.setDelegate(new PhotoAttachAdapter.PhotoAttachAdapterDelegate() {
-            @Override
-            public void selectedPhotosChanged() {
-                updatePhotosButton();
-            }
-        });
         attachPhotoRecyclerView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
+            @SuppressWarnings("unchecked")
             @Override
             public void onItemClick(View view, int position) {
-                photoAttachAdapter.onItemClick((PhotoAttachPhotoCell) view);
+                if (baseFragment == null || baseFragment.getParentActivity() == null) {
+                    return;
+                }
+                ArrayList<Object> arrayList = (ArrayList) MediaController.allPhotosAlbumEntry.photos;
+                if (position < 0 || position >= arrayList.size()) {
+                    return;
+                }
+                PhotoViewer.getInstance().setParentActivity(baseFragment.getParentActivity());
+                PhotoViewer.getInstance().openPhotoForSelect(arrayList, position, 0, ChatAttachView.this, baseFragment);
+                AndroidUtilities.hideKeyboard(baseFragment.getFragmentView().findFocus());
             }
         });
 
         views[9] = progressView = new EmptyTextProgressView(context);
-        progressView.setText(LocaleController.getString("NoPhotos", R.string.NoPhotos));
+        if (Build.VERSION.SDK_INT >= 23 && getContext().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            progressView.setText(LocaleController.getString("PermissionStorage", R.string.PermissionStorage));
+            progressView.setTextSize(16);
+        } else {
+            progressView.setText(LocaleController.getString("NoPhotos", R.string.NoPhotos));
+            progressView.setTextSize(20);
+        }
         addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 80));
         attachPhotoRecyclerView.setEmptyView(progressView);
 
@@ -150,25 +164,15 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
                 LocaleController.getString("ChatCamera", R.string.ChatCamera),
                 LocaleController.getString("ChatGallery", R.string.ChatGallery),
                 LocaleController.getString("ChatVideo", R.string.ChatVideo),
-                LocaleController.getString("AttachAudio", R.string.AttachAudio),
+                LocaleController.getString("AttachMusic", R.string.AttachMusic),
                 LocaleController.getString("ChatDocument", R.string.ChatDocument),
                 LocaleController.getString("AttachContact", R.string.AttachContact),
                 LocaleController.getString("ChatLocation", R.string.ChatLocation),
                 ""
         };
-        int itemIcons[] = new int[] {
-                R.drawable.attach_camera_states,
-                R.drawable.attach_gallery_states,
-                R.drawable.attach_video_states,
-                R.drawable.attach_audio_states,
-                R.drawable.attach_file_states,
-                R.drawable.attach_contact_states,
-                R.drawable.attach_location_states,
-                R.drawable.attach_hide_states,
-        };
         for (int a = 0; a < 8; a++) {
             AttachButton attachButton = new AttachButton(context);
-            attachButton.setTextAndIcon(items[a], itemIcons[a]);
+            attachButton.setTextAndIcon(items[a], Theme.attachButtonDrawables[a]);
             addView(attachButton, LayoutHelper.createFrame(85, 90, Gravity.LEFT | Gravity.TOP));
             attachButton.setTag(a);
             views[a] = attachButton;
@@ -191,6 +195,10 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
                 return true;
             }
         });
+
+        for (int a = 0; a < 8; a++) {
+            viewsCache.add(photoAttachAdapter.createHolder());
+        }
 
         if (loading) {
             progressView.showProgress();
@@ -245,6 +253,14 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
             sendPhotosButton.imageView.setImageResource(R.drawable.attach_send2);
             sendPhotosButton.textView.setText(LocaleController.formatString("SendItems", R.string.SendItems, String.format("(%d)", count)));
         }
+
+        if (Build.VERSION.SDK_INT >= 23 && getContext().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            progressView.setText(LocaleController.getString("PermissionStorage", R.string.PermissionStorage));
+            progressView.setTextSize(16);
+        } else {
+            progressView.setText(LocaleController.getString("NoPhotos", R.string.NoPhotos));
+            progressView.setTextSize(20);
+        }
     }
 
     public void setDelegate(ChatAttachViewDelegate chatAttachViewDelegate) {
@@ -253,6 +269,12 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
 
     public void onRevealAnimationEnd(boolean open) {
         if (open && Build.VERSION.SDK_INT <= 19 && MediaController.allPhotosAlbumEntry == null) {
+            MediaController.loadGalleryPhotosAlbums(0);
+        }
+    }
+
+    public void loadGalleryPhotos() {
+        if (MediaController.allPhotosAlbumEntry == null && Build.VERSION.SDK_INT >= 21) {
             MediaController.loadGalleryPhotosAlbums(0);
         }
     }
@@ -332,6 +354,14 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
     }
 
     public void init(ChatActivity parentFragment) {
+        if (MediaController.allPhotosAlbumEntry != null) {
+            for (int a = 0; a < Math.min(100, MediaController.allPhotosAlbumEntry.photos.size()); a++) {
+                MediaController.PhotoEntry photoEntry = MediaController.allPhotosAlbumEntry.photos.get(a);
+                photoEntry.caption = null;
+                photoEntry.imagePath = null;
+                photoEntry.thumbPath = null;
+            }
+        }
         attachPhotoLayoutManager.scrollToPositionWithOffset(0, 1000000);
         photoAttachAdapter.clearSelectedPhotos();
         baseFragment = parentFragment;
@@ -345,5 +375,237 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
     public void onDestroy() {
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.albumsDidLoaded);
         baseFragment = null;
+    }
+
+    private PhotoAttachPhotoCell getCellForIndex(int index) {
+        int count = attachPhotoRecyclerView.getChildCount();
+        for (int a = 0; a < count; a++) {
+            View view = attachPhotoRecyclerView.getChildAt(a);
+            if (view instanceof PhotoAttachPhotoCell) {
+                PhotoAttachPhotoCell cell = (PhotoAttachPhotoCell) view;
+                int num = (Integer) cell.getImageView().getTag();
+                if (num < 0 || num >= MediaController.allPhotosAlbumEntry.photos.size()) {
+                    continue;
+                }
+                if (num == index) {
+                    return cell;
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+        PhotoAttachPhotoCell cell = getCellForIndex(index);
+        if (cell != null) {
+            int coords[] = new int[2];
+            cell.getImageView().getLocationInWindow(coords);
+            PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
+            object.viewX = coords[0];
+            object.viewY = coords[1] - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+            object.parentView = attachPhotoRecyclerView;
+            object.imageReceiver = cell.getImageView().getImageReceiver();
+            object.thumb = object.imageReceiver.getBitmap();
+            object.scale = ViewProxy.getScaleX(cell.getImageView());
+            object.clipBottomAddition = (Build.VERSION.SDK_INT >= 21 ? 0 : -AndroidUtilities.statusBarHeight);
+            cell.getCheckBox().setVisibility(View.GONE);
+            return object;
+        }
+        return null;
+    }
+
+    @Override
+    public void updatePhotoAtIndex(int index) {
+        PhotoAttachPhotoCell cell = getCellForIndex(index);
+        if (cell != null) {
+            cell.getImageView().setOrientation(0, true);
+            MediaController.PhotoEntry photoEntry = MediaController.allPhotosAlbumEntry.photos.get(index);
+            if (photoEntry.thumbPath != null) {
+                cell.getImageView().setImage(photoEntry.thumbPath, null, cell.getContext().getResources().getDrawable(R.drawable.nophotos));
+            } else if (photoEntry.path != null) {
+                cell.getImageView().setOrientation(photoEntry.orientation, true);
+                cell.getImageView().setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, cell.getContext().getResources().getDrawable(R.drawable.nophotos));
+            } else {
+                cell.getImageView().setImageResource(R.drawable.nophotos);
+            }
+        }
+    }
+
+    @Override
+    public Bitmap getThumbForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+        PhotoAttachPhotoCell cell = getCellForIndex(index);
+        if (cell != null) {
+            return cell.getImageView().getImageReceiver().getBitmap();
+        }
+        return null;
+    }
+
+    @Override
+    public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+        PhotoAttachPhotoCell cell = getCellForIndex(index);
+        if (cell != null) {
+            cell.getCheckBox().setVisibility(View.VISIBLE);
+        }
+    }
+
+    @Override
+    public void willHidePhotoViewer() {
+        int count = attachPhotoRecyclerView.getChildCount();
+        for (int a = 0; a < count; a++) {
+            View view = attachPhotoRecyclerView.getChildAt(a);
+            if (view instanceof PhotoAttachPhotoCell) {
+                PhotoAttachPhotoCell cell = (PhotoAttachPhotoCell) view;
+                if (cell.getCheckBox().getVisibility() != VISIBLE) {
+                    cell.getCheckBox().setVisibility(VISIBLE);
+                }
+            }
+        }
+    }
+
+    @Override
+    public boolean isPhotoChecked(int index) {
+        return !(index < 0 || index >= MediaController.allPhotosAlbumEntry.photos.size()) && photoAttachAdapter.getSelectedPhotos().containsKey(MediaController.allPhotosAlbumEntry.photos.get(index).imageId);
+    }
+
+    @Override
+    public void setPhotoChecked(int index) {
+        boolean add = true;
+        if (index < 0 || index >= MediaController.allPhotosAlbumEntry.photos.size()) {
+            return;
+        }
+        MediaController.PhotoEntry photoEntry = MediaController.allPhotosAlbumEntry.photos.get(index);
+        if (photoAttachAdapter.getSelectedPhotos().containsKey(photoEntry.imageId)) {
+            photoAttachAdapter.getSelectedPhotos().remove(photoEntry.imageId);
+            add = false;
+        } else {
+            photoAttachAdapter.getSelectedPhotos().put(photoEntry.imageId, photoEntry);
+        }
+        int count = attachPhotoRecyclerView.getChildCount();
+        for (int a = 0; a < count; a++) {
+            View view = attachPhotoRecyclerView.getChildAt(a);
+            int num = (Integer) view.getTag();
+            if (num == index) {
+                ((PhotoAttachPhotoCell) view).setChecked(add, false);
+                break;
+            }
+        }
+        updatePhotosButton();
+    }
+
+    @Override
+    public boolean cancelButtonPressed() {
+        return false;
+    }
+
+    @Override
+    public void sendButtonPressed(int index) {
+        if (photoAttachAdapter.getSelectedPhotos().isEmpty()) {
+            if (index < 0 || index >= MediaController.allPhotosAlbumEntry.photos.size()) {
+                return;
+            }
+            MediaController.PhotoEntry photoEntry = MediaController.allPhotosAlbumEntry.photos.get(index);
+            photoAttachAdapter.getSelectedPhotos().put(photoEntry.imageId, photoEntry);
+        }
+        delegate.didPressedButton(7);
+    }
+
+    @Override
+    public int getSelectedCount() {
+        return photoAttachAdapter.getSelectedPhotos().size();
+    }
+
+    @Override
+    public boolean hasOverlappingRendering() {
+        return false;
+    }
+
+    public class PhotoAttachAdapter extends RecyclerView.Adapter {
+
+        private Context mContext;
+        private HashMap<Integer, MediaController.PhotoEntry> selectedPhotos = new HashMap<>();
+
+        private class Holder extends RecyclerView.ViewHolder {
+
+            public Holder(View itemView) {
+                super(itemView);
+            }
+        }
+
+        public PhotoAttachAdapter(Context context) {
+            mContext = context;
+        }
+
+        public void clearSelectedPhotos() {
+            if (!selectedPhotos.isEmpty()) {
+                for (HashMap.Entry<Integer, MediaController.PhotoEntry> entry : selectedPhotos.entrySet()) {
+                    MediaController.PhotoEntry photoEntry = entry.getValue();
+                    photoEntry.imagePath = null;
+                    photoEntry.thumbPath = null;
+                    photoEntry.caption = null;
+                }
+                selectedPhotos.clear();
+                updatePhotosButton();
+                notifyDataSetChanged();
+            }
+        }
+
+        public Holder createHolder() {
+            PhotoAttachPhotoCell cell = new PhotoAttachPhotoCell(mContext);
+            cell.setDelegate(new PhotoAttachPhotoCell.PhotoAttachPhotoCellDelegate() {
+                @Override
+                public void onCheckClick(PhotoAttachPhotoCell v) {
+                    MediaController.PhotoEntry photoEntry = v.getPhotoEntry();
+                    if (selectedPhotos.containsKey(photoEntry.imageId)) {
+                        selectedPhotos.remove(photoEntry.imageId);
+                        v.setChecked(false, true);
+                        photoEntry.imagePath = null;
+                        photoEntry.thumbPath = null;
+                        v.setPhotoEntry(photoEntry, (Integer) v.getTag() == MediaController.allPhotosAlbumEntry.photos.size() - 1);
+                    } else {
+                        selectedPhotos.put(photoEntry.imageId, photoEntry);
+                        v.setChecked(true, true);
+                    }
+                    updatePhotosButton();
+                }
+            });
+            return new Holder(cell);
+        }
+
+        public HashMap<Integer, MediaController.PhotoEntry> getSelectedPhotos() {
+            return selectedPhotos;
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            PhotoAttachPhotoCell cell = (PhotoAttachPhotoCell) holder.itemView;
+            MediaController.PhotoEntry photoEntry = MediaController.allPhotosAlbumEntry.photos.get(position);
+            cell.setPhotoEntry(photoEntry, position == MediaController.allPhotosAlbumEntry.photos.size() - 1);
+            cell.setChecked(selectedPhotos.containsKey(photoEntry.imageId), false);
+            cell.getImageView().setTag(position);
+            cell.setTag(position);
+        }
+
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            Holder holder;
+            if (!viewsCache.isEmpty()) {
+                holder = viewsCache.get(0);
+                viewsCache.remove(0);
+            } else {
+                holder = createHolder();
+            }
+            return holder;
+        }
+
+        @Override
+        public int getItemCount() {
+            return (MediaController.allPhotosAlbumEntry != null ? MediaController.allPhotosAlbumEntry.photos.size() : 0);
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            return 0;
+        }
     }
 }

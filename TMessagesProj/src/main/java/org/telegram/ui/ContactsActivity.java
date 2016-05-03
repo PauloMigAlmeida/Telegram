@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -42,6 +42,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.SecretChatHelper;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
@@ -79,6 +80,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean returnAsResult;
     private boolean createSecretChat;
     private boolean creatingChat = false;
+    private boolean allowBots = true;
     private boolean needForwardCount = true;
     private int chat_id;
     private String selectAlertString = null;
@@ -110,6 +112,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             selectAlertString = arguments.getString("selectAlertString");
             allowUsernameSearch = arguments.getBoolean("allowUsernameSearch", true);
             needForwardCount = arguments.getBoolean("needForwardCount", true);
+            allowBots = arguments.getBoolean("allowBots", true);
             chat_id = arguments.getInt("chat_id", 0);
         } else {
             needPhonebook = true;
@@ -212,7 +215,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             item.setVisibility(View.GONE);
         }
 
-        searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch, false, false);
+        searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch, false, false, allowBots);
         listViewAdapter = new ContactsAdapter(context, onlyUsers ? 1 : 0, needPhonebook, ignoreUsers, chat_id != 0);
 
         fragmentView = new FrameLayout(context);
@@ -292,12 +295,17 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         didSelectResult(user, true, null);
                     } else {
                         if (createSecretChat) {
+                            if (user.id == UserConfig.getClientUserId()) {
+                                return;
+                            }
                             creatingChat = true;
                             SecretChatHelper.getInstance().startSecretChat(getParentActivity(), user);
                         } else {
                             Bundle args = new Bundle();
                             args.putInt("user_id", user.id);
-                            presentFragment(new ChatActivity(args), true);
+                            if (MessagesController.checkCanOpenChat(args, ContactsActivity.this)) {
+                                presentFragment(new ChatActivity(args), true);
+                            }
                         }
                     }
                 } else {
@@ -342,6 +350,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 args.putBoolean("onlyUsers", true);
                                 args.putBoolean("destroyAfterSelect", true);
                                 args.putBoolean("createSecretChat", true);
+                                args.putBoolean("allowBots", false);
                                 presentFragment(new ContactsActivity(args), false);
                             } else if (row == 2) {
                                 if (!MessagesController.isFeatureEnabled("broadcast_create", ContactsActivity.this)) {
@@ -375,7 +384,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 } else {
                                     Bundle args = new Bundle();
                                     args.putInt("user_id", user.id);
-                                    presentFragment(new ChatActivity(args), true);
+                                    if (MessagesController.checkCanOpenChat(args, ContactsActivity.this)) {
+                                        presentFragment(new ChatActivity(args), true);
+                                    }
                                 }
                             }
                         } else if (item instanceof ContactsController.Contact) {
@@ -435,7 +446,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             if (getParentActivity() == null) {
                 return;
             }
-            if ((user.flags & TLRPC.USER_FLAG_BOT) != 0 && (user.flags & TLRPC.USER_FLAG_BOT_CANT_JOIN_GROUP) != 0) {
+            if (user.bot && user.bot_nochats) {
                 try {
                     Toast.makeText(getParentActivity(), LocaleController.getString("BotCantJoinGroups", R.string.BotCantJoinGroups), Toast.LENGTH_SHORT).show();
                 } catch (Exception e) {
@@ -447,7 +458,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             String message = LocaleController.formatStringSimple(selectAlertString, UserObject.getUserName(user));
             EditText editText = null;
-            if ((user.flags & TLRPC.USER_FLAG_BOT) == 0 && needForwardCount) {
+            if (!user.bot && needForwardCount) {
                 message = String.format("%s\n\n%s", message, LocaleController.getString("AddToTheGroupForwardCount", R.string.AddToTheGroupForwardCount));
                 editText = new EditText(getParentActivity());
                 if (android.os.Build.VERSION.SDK_INT < 11) {
