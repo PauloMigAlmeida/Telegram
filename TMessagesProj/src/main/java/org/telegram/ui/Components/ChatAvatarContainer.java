@@ -17,6 +17,8 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import com.finger2view.messenger.support.util.BiometryController;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
@@ -102,22 +104,24 @@ public class ChatAvatarContainer extends FrameLayout {
                 if (radioButton == null || radioButton.getVisibility() != View.VISIBLE) {
                     TLRPC.User user = parentFragment.getCurrentUser();
                     TLRPC.Chat chat = parentFragment.getCurrentChat();
-                    if (user != null) {
-                        Bundle args = new Bundle();
-                        args.putInt("user_id", user.id);
-                        if (timeItem != null) {
-                            args.putLong("dialog_id", parentFragment.getDialogId());
+                    if(BiometryController.getInstance().isUnlocked()){
+                        if (user != null) {
+                            Bundle args = new Bundle();
+                            args.putInt("user_id", user.id);
+                            if (timeItem != null) {
+                                args.putLong("dialog_id", parentFragment.getDialogId());
+                            }
+                            ProfileActivity fragment = new ProfileActivity(args);
+                            fragment.setPlayProfileAnimation(true);
+                            parentFragment.presentFragment(fragment);
+                        } else if (chat != null) {
+                            Bundle args = new Bundle();
+                            args.putInt("chat_id", chat.id);
+                            ProfileActivity fragment = new ProfileActivity(args);
+                            fragment.setChatInfo(parentFragment.getCurrentChatInfo());
+                            fragment.setPlayProfileAnimation(true);
+                            parentFragment.presentFragment(fragment);
                         }
-                        ProfileActivity fragment = new ProfileActivity(args);
-                        fragment.setPlayProfileAnimation(true);
-                        parentFragment.presentFragment(fragment);
-                    } else if (chat != null) {
-                        Bundle args = new Bundle();
-                        args.putInt("chat_id", chat.id);
-                        ProfileActivity fragment = new ProfileActivity(args);
-                        fragment.setChatInfo(parentFragment.getCurrentChatInfo());
-                        fragment.setPlayProfileAnimation(true);
-                        parentFragment.presentFragment(fragment);
                     }
                 } else {
                     delegate.didPressedRadioButton();

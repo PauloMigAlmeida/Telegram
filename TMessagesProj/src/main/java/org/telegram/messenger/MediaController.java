@@ -50,6 +50,8 @@ import android.provider.OpenableColumns;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 
+import com.finger2view.messenger.support.util.BiometryController;
+
 import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.messenger.query.SharedMediaQuery;
 import org.telegram.messenger.video.InputSurface;
@@ -2148,79 +2150,122 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
         cleanupPlayer(notify, false);
         playMusicAgain = false;
-        File file = null;
-        if (messageObject.messageOwner.attachPath != null && messageObject.messageOwner.attachPath.length() > 0) {
-            file = new File(messageObject.messageOwner.attachPath);
-            if (!file.exists()) {
-                file = null;
+
+        if(BiometryController.getInstance().isUnlocked()){
+            File file = null;
+            if (messageObject.messageOwner.attachPath != null && messageObject.messageOwner.attachPath.length() > 0) {
+                file = new File(messageObject.messageOwner.attachPath);
+                if (!file.exists()) {
+                    file = null;
+                }
             }
-        }
-        final File cacheFile = file != null ? file : FileLoader.getPathToMessage(messageObject.messageOwner);
-        if (cacheFile != null && cacheFile != file && !cacheFile.exists() && messageObject.isMusic()) {
-            FileLoader.getInstance().loadFile(messageObject.getDocument(), false, false);
-            downloadingCurrentMessage = true;
-            isPaused = false;
-            lastProgress = 0;
-            lastPlayPcm = 0;
-            audioInfo = null;
-            playingMessageObject = messageObject;
-            if (playingMessageObject.getDocument() != null) {
-                Intent intent = new Intent(ApplicationLoader.applicationContext, MusicPlayerService.class);
-                ApplicationLoader.applicationContext.startService(intent);
+            final File cacheFile = file != null ? file : FileLoader.getPathToMessage(messageObject.messageOwner);
+            if (cacheFile != null && cacheFile != file && !cacheFile.exists() && messageObject.isMusic()) {
+                FileLoader.getInstance().loadFile(messageObject.getDocument(), false, false);
+                downloadingCurrentMessage = true;
+                isPaused = false;
+                lastProgress = 0;
+                lastPlayPcm = 0;
+                audioInfo = null;
+                playingMessageObject = messageObject;
+                if (playingMessageObject.getDocument() != null) {
+                    Intent intent = new Intent(ApplicationLoader.applicationContext, MusicPlayerService.class);
+                    ApplicationLoader.applicationContext.startService(intent);
+                } else {
+                    Intent intent = new Intent(ApplicationLoader.applicationContext, MusicPlayerService.class);
+                    ApplicationLoader.applicationContext.stopService(intent);
+                }
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioPlayStateChanged, playingMessageObject.getId());
+                return true;
             } else {
-                Intent intent = new Intent(ApplicationLoader.applicationContext, MusicPlayerService.class);
-                ApplicationLoader.applicationContext.stopService(intent);
+                downloadingCurrentMessage = false;
             }
-            NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioPlayStateChanged, playingMessageObject.getId());
-            return true;
-        } else {
-            downloadingCurrentMessage = false;
-        }
-        if (messageObject.isMusic()) {
-            checkIsNextMusicFileDownloaded();
-        }
+            if (messageObject.isMusic()) {
+                checkIsNextMusicFileDownloaded();
+            }
 
-        if (isOpusFile(cacheFile.getAbsolutePath()) == 1) {
-            playlist.clear();
-            shuffledPlaylist.clear();
-            synchronized (playerObjectSync) {
-                try {
-                    ignoreFirstProgress = 3;
-                    final Semaphore semaphore = new Semaphore(0);
-                    final Boolean[] result = new Boolean[1];
-                    fileDecodingQueue.postRunnable(new Runnable() {
-                        @Override
-                        public void run() {
-                            result[0] = openOpusFile(cacheFile.getAbsolutePath()) != 0;
-                            semaphore.release();
+            if (isOpusFile(cacheFile.getAbsolutePath()) == 1) {
+                playlist.clear();
+                shuffledPlaylist.clear();
+                synchronized (playerObjectSync) {
+                    try {
+                        ignoreFirstProgress = 3;
+                        final Semaphore semaphore = new Semaphore(0);
+                        final Boolean[] result = new Boolean[1];
+                        fileDecodingQueue.postRunnable(new Runnable() {
+                            @Override
+                            public void run() {
+                                result[0] = openOpusFile(cacheFile.getAbsolutePath()) != 0;
+                                semaphore.release();
+                            }
+                        });
+                        semaphore.acquire();
+
+                        if (!result[0]) {
+                            return false;
                         }
-                    });
-                    semaphore.acquire();
+                        currentTotalPcmDuration = getTotalPcmDuration();
 
-                    if (!result[0]) {
+                        audioTrackPlayer = new AudioTrack(useFrontSpeaker ? AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_MUSIC, 48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, playerBufferSize, AudioTrack.MODE_STREAM);
+                        audioTrackPlayer.setStereoVolume(1.0f, 1.0f);
+                        audioTrackPlayer.setPlaybackPositionUpdateListener(new AudioTrack.OnPlaybackPositionUpdateListener() {
+                            @Override
+                            public void onMarkerReached(AudioTrack audioTrack) {
+                                cleanupPlayer(true, true, true);
+                            }
+
+                            @Override
+                            public void onPeriodicNotification(AudioTrack audioTrack) {
+
+                            }
+                        });
+                        audioTrackPlayer.play();
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                        if (audioTrackPlayer != null) {
+                            audioTrackPlayer.release();
+                            audioTrackPlayer = null;
+                            isPaused = false;
+                            playingMessageObject = null;
+                            downloadingCurrentMessage = false;
+                        }
                         return false;
                     }
-                    currentTotalPcmDuration = getTotalPcmDuration();
-
-                    audioTrackPlayer = new AudioTrack(useFrontSpeaker ? AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_MUSIC, 48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, playerBufferSize, AudioTrack.MODE_STREAM);
-                    audioTrackPlayer.setStereoVolume(1.0f, 1.0f);
-                    audioTrackPlayer.setPlaybackPositionUpdateListener(new AudioTrack.OnPlaybackPositionUpdateListener() {
+                }
+            } else {
+                try {
+                    audioPlayer = new MediaPlayer();
+                    audioPlayer.setAudioStreamType(useFrontSpeaker ? AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_MUSIC);
+                    audioPlayer.setDataSource(cacheFile.getAbsolutePath());
+                    audioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                         @Override
-                        public void onMarkerReached(AudioTrack audioTrack) {
-                            cleanupPlayer(true, true, true);
-                        }
-
-                        @Override
-                        public void onPeriodicNotification(AudioTrack audioTrack) {
-
+                        public void onCompletion(MediaPlayer mediaPlayer) {
+                            if (!playlist.isEmpty() && playlist.size() > 1) {
+                                playNextMessage(true);
+                            } else {
+                                cleanupPlayer(true, true, messageObject != null && messageObject.isVoice());
+                            }
                         }
                     });
-                    audioTrackPlayer.play();
+                    audioPlayer.prepare();
+                    audioPlayer.start();
+                    if (messageObject.isVoice()) {
+                        audioInfo = null;
+                        playlist.clear();
+                        shuffledPlaylist.clear();
+                    } else {
+                        try {
+                            audioInfo = AudioInfo.getAudioInfo(cacheFile);
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
+                    }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
-                    if (audioTrackPlayer != null) {
-                        audioTrackPlayer.release();
-                        audioTrackPlayer = null;
+                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioPlayStateChanged, playingMessageObject != null ? playingMessageObject.getId() : 0);
+                    if (audioPlayer != null) {
+                        audioPlayer.release();
+                        audioPlayer = null;
                         isPaused = false;
                         playingMessageObject = null;
                         downloadingCurrentMessage = false;
@@ -2228,37 +2273,78 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     return false;
                 }
             }
+            checkAudioFocus(messageObject);
+
+            isPaused = false;
+            lastProgress = 0;
+            lastPlayPcm = 0;
+            playingMessageObject = messageObject;
+            if (!raiseToSpeak) {
+                startRaiseToEarSensors(raiseChat);
+            }
+            startProgressTimer(playingMessageObject);
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioDidStarted, messageObject);
+
+            if (audioPlayer != null) {
+                try {
+                    if (playingMessageObject.audioProgress != 0) {
+                        int seekTo = (int) (audioPlayer.getDuration() * playingMessageObject.audioProgress);
+                        audioPlayer.seekTo(seekTo);
+                    }
+                } catch (Exception e2) {
+                    playingMessageObject.audioProgress = 0;
+                    playingMessageObject.audioProgressSec = 0;
+                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioProgressDidChanged, playingMessageObject.getId(), 0);
+                    FileLog.e("tmessages", e2);
+                }
+            } else if (audioTrackPlayer != null) {
+                if (playingMessageObject.audioProgress == 1) {
+                    playingMessageObject.audioProgress = 0;
+                }
+                fileDecodingQueue.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            if (playingMessageObject != null && playingMessageObject.audioProgress != 0) {
+                                lastPlayPcm = (long) (currentTotalPcmDuration * playingMessageObject.audioProgress);
+                                seekOpusFile(playingMessageObject.audioProgress);
+                            }
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
+                        synchronized (playerSync) {
+                            freePlayerBuffers.addAll(usedPlayerBuffers);
+                            usedPlayerBuffers.clear();
+                        }
+                        decodingFinished = false;
+                        checkPlayerQueue();
+                    }
+                });
+            }
         } else {
             try {
-                audioPlayer = new MediaPlayer();
-                audioPlayer.setAudioStreamType(useFrontSpeaker ? AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_MUSIC);
-                audioPlayer.setDataSource(cacheFile.getAbsolutePath());
+                audioPlayer = MediaPlayer.create(ApplicationLoader.applicationContext, R.raw.alarmsound);
+                audioPlayer.setAudioStreamType(/*useFrontSpeaker ? AudioManager.STREAM_VOICE_CALL : */AudioManager.STREAM_MUSIC);
                 audioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                     @Override
                     public void onCompletion(MediaPlayer mediaPlayer) {
                         if (!playlist.isEmpty() && playlist.size() > 1) {
                             playNextMessage(true);
                         } else {
-                            cleanupPlayer(true, true, messageObject != null && messageObject.isVoice());
+                            cleanupPlayer(true, true);
                         }
                     }
                 });
-                audioPlayer.prepare();
+//                audioPlayer.prepare();
                 audioPlayer.start();
-                if (messageObject.isVoice()) {
-                    audioInfo = null;
-                    playlist.clear();
-                    shuffledPlaylist.clear();
-                } else {
-                    try {
-                        audioInfo = AudioInfo.getAudioInfo(cacheFile);
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                }
+                startProgressTimer(playingMessageObject);
+                audioInfo = null;
+                playlist.clear();
+                shuffledPlaylist.clear();
+//                startProximitySensor();
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
-                NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioPlayStateChanged, playingMessageObject != null ? playingMessageObject.getId() : 0);
+                e.printStackTrace();
                 if (audioPlayer != null) {
                     audioPlayer.release();
                     audioPlayer = null;
@@ -2269,56 +2355,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 return false;
             }
         }
-        checkAudioFocus(messageObject);
 
-        isPaused = false;
-        lastProgress = 0;
-        lastPlayPcm = 0;
-        playingMessageObject = messageObject;
-        if (!raiseToSpeak) {
-            startRaiseToEarSensors(raiseChat);
-        }
-        startProgressTimer(playingMessageObject);
-        NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioDidStarted, messageObject);
-
-        if (audioPlayer != null) {
-            try {
-                if (playingMessageObject.audioProgress != 0) {
-                    int seekTo = (int) (audioPlayer.getDuration() * playingMessageObject.audioProgress);
-                    audioPlayer.seekTo(seekTo);
-                }
-            } catch (Exception e2) {
-                playingMessageObject.audioProgress = 0;
-                playingMessageObject.audioProgressSec = 0;
-                NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioProgressDidChanged, playingMessageObject.getId(), 0);
-                FileLog.e("tmessages", e2);
-            }
-        } else if (audioTrackPlayer != null) {
-            if (playingMessageObject.audioProgress == 1) {
-                playingMessageObject.audioProgress = 0;
-            }
-            fileDecodingQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        if (playingMessageObject != null && playingMessageObject.audioProgress != 0) {
-                            lastPlayPcm = (long) (currentTotalPcmDuration * playingMessageObject.audioProgress);
-                            seekOpusFile(playingMessageObject.audioProgress);
-                        }
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                    synchronized (playerSync) {
-                        freePlayerBuffers.addAll(usedPlayerBuffers);
-                        usedPlayerBuffers.clear();
-                    }
-                    decodingFinished = false;
-                    checkPlayerQueue();
-                }
-            });
-        }
-
-        if (playingMessageObject.isMusic()) {
+        if (playingMessageObject != null && playingMessageObject.isMusic()) {
             Intent intent = new Intent(ApplicationLoader.applicationContext, MusicPlayerService.class);
             ApplicationLoader.applicationContext.startService(intent);
         } else {

@@ -4061,7 +4061,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if(!BiometryController.getInstance().isUnlocked()){
                         finalText = RandomStringUtils.randomAlphabetic(finalText.length());
                     }
-                    avatarContainer.setTitlefinalText);
+                    avatarContainer.setTitle(finalText);
                 }
             } else {
                 String finalText = UserObject.getUserName(currentUser);
