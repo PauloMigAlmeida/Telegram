@@ -12,6 +12,8 @@ dependencies {
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
     compile 'org.apache.httpcomponents:httpmime:4.2.1'
     compile 'commons-lang:commons-lang:2.6'
+    compile files('libs/pass-v1.2.1.jar')
+    compile files('libs/sdk-v1.0.0.jar')
 }
 
 android {
@@ -114,7 +116,7 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 23
+        minSdkVersion 22
         targetSdkVersion 23
         versionName "3.8.1"
     }

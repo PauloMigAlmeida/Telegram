@@ -23,6 +23,7 @@ import android.content.res.Configuration;
 import android.graphics.Outline;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -37,8 +38,11 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.finger2view.messenger.support.util.BiometryController;
+import com.samsung.android.sdk.pass.Spass;
+import com.samsung.android.sdk.pass.SpassFingerprint;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
@@ -116,6 +120,42 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private DialogsActivityDelegate delegate;
 
+    //Samsumg Pass
+    private ActionBarMenuItem item;
+    private Spass spass;
+    private SpassFingerprint spassFingerprint;
+    private SpassFingerprint.IdentifyListener listener = new SpassFingerprint.IdentifyListener() {
+        @Override
+        public void onFinished(int eventStatus) {
+            if(eventStatus == SpassFingerprint.STATUS_AUTHENTIFICATION_SUCCESS || eventStatus == SpassFingerprint.STATUS_AUTHENTIFICATION_PASSWORD_SUCCESS){
+                BiometryController.getInstance().setUnlocked(true);
+                listView.getAdapter().notifyDataSetChanged();
+                item.setVisibility(BiometryController.getInstance().isUnlocked() ? View.VISIBLE : View.GONE);
+            }else{
+                Toast.makeText(
+                        DialogsActivity.this.getParentActivity(),
+                        LocaleController.getString("PermissionFingerprintAuthFailed", R.string.PermissionFingerprintAuthFailed),
+                        Toast.LENGTH_LONG
+                ).show();
+            }
+        }
+
+        @Override
+        public void onReady() {
+
+        }
+
+        @Override
+        public void onStarted() {
+
+        }
+
+        @Override
+        public void onCompleted() {
+
+        }
+    };
+
     public interface DialogsActivityDelegate {
         void didSelectDialog(DialogsActivity fragment, long dialog_id, boolean param);
     }
@@ -189,6 +229,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         searching = false;
         searchWas = false;
 
+        try{
+            this.spass = new Spass();
+            this.spass.initialize(context);
+            this.spassFingerprint = new SpassFingerprint(this.getParentActivity());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        boolean isFeatureEnabled = spass.isFeatureEnabled(Spass.DEVICE_FINGERPRINT);
+        if(isFeatureEnabled){
+            spassFingerprint = new SpassFingerprint(context);
+        }
+
         Theme.loadRecources(context);
 
         ActionBarMenu menu = actionBar.createMenu();
@@ -196,7 +249,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             passcodeItem = menu.addItem(1, R.drawable.lock_close);
             updatePasscodeButton();
         }
-        final ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+        item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
             public void onSearchExpand() {
                 searching = true;
@@ -676,13 +729,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         });
 
 
-        //Temp button
-
+        //TODO find a good icon for it: Floating button
         unlockButton = new ImageView(context);
         unlockButton.setVisibility(onlySelect ? View.GONE : View.VISIBLE);
         unlockButton.setScaleType(ImageView.ScaleType.CENTER);
         unlockButton.setBackgroundResource(R.drawable.floating_states);
-        unlockButton.setImageResource(R.drawable.floating_locker);
+        unlockButton.setImageResource(R.drawable.floating_pencil);
         if (Build.VERSION.SDK_INT >= 21) {
             StateListAnimator animator = new StateListAnimator();
             animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(unlockButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
@@ -700,9 +752,24 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         unlockButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                BiometryController.getInstance().setUnlocked(!BiometryController.getInstance().isUnlocked());
-                listView.getAdapter().notifyDataSetChanged();
-                item.setVisibility(BiometryController.getInstance().isUnlocked() ? View.VISIBLE : View.GONE);
+
+                boolean isFeatureEnabled = spass.isFeatureEnabled(Spass.DEVICE_FINGERPRINT);
+                if(isFeatureEnabled && !BiometryController.getInstance().isUnlocked()){
+                    boolean mHasRegisteredFinger = spassFingerprint.hasRegisteredFinger();
+                    if(mHasRegisteredFinger){
+                        spassFingerprint.startIdentifyWithDialog(context, listener, false);
+                    }else{
+                        AlertDialog.Builder builder = new AlertDialog.Builder(DialogsActivity.this.getParentActivity());
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setMessage(LocaleController.getString("PermissionNoFingerprint", R.string.PermissionNoFingerprint));
+                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                        showDialog(permissionDialog = builder.create());
+                    }
+                }else{
+                    BiometryController.getInstance().setUnlocked(!BiometryController.getInstance().isUnlocked());
+                    listView.getAdapter().notifyDataSetChanged();
+                    item.setVisibility(BiometryController.getInstance().isUnlocked() ? View.VISIBLE : View.GONE);
+                }
             }
         });
 

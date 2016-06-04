@@ -978,6 +978,8 @@
     <string name="PermissionNoLocation">Telegram needs access to your location so that you can share it with your friends.</string>
     <string name="PermissionNoLocationPosition">Telegram needs access to your location.</string>
     <string name="PermissionOpenSettings">SETTINGS</string>
+    <string name="PermissionNoFingerprint">You don\'t have any registered fingerprint on this device.</string>
+    <string name="PermissionFingerprintAuthFailed">Authentication failed, try it again.</string>
     <!--Intro view-->
     <string name="Page1Title">Finger2View</string>
     <string name="Page2Title">Fast</string>
