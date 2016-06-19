@@ -494,7 +494,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                     showDialog(builder.create());
                 } else if (i == telegramFaqRow) {
-                    Browser.openUrl(getParentActivity(), LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl));
+                    Browser.openUrl(getParentActivity(), LocaleController.getString("Finger2ViewFaqUrl", R.string.Finger2ViewFaqUrl));
                 } else if (i == privacyPolicyRow) {
                     Browser.openUrl(getParentActivity(), LocaleController.getString("PrivacyPolicyUrl", R.string.PrivacyPolicyUrl));
                 } else if (i == contactsReimportRow) {
@@ -1231,7 +1231,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } else if (i == switchBackendButtonRow) {
                     textCell.setText("Switch Backend", true);
                 } else if (i == telegramFaqRow) {
-                    textCell.setText(LocaleController.getString("TelegramFAQ", R.string.TelegramFaq), true);
+                    textCell.setText(LocaleController.getString("Finger2ViewFaq", R.string.Finger2ViewFaq), true);
                 } else if (i == contactsReimportRow) {
                     textCell.setText(LocaleController.getString("ImportContacts", R.string.ImportContacts), true);
                 } else if (i == stickersRow) {

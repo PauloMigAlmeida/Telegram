@@ -21,7 +21,7 @@ android {
     buildToolsVersion '23.0.3'
 
     useLibrary 'org.apache.http.legacy'
-    defaultConfig.applicationId = "org.telegram.messenger"
+    defaultConfig.applicationId = "co.finger2view.app"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7

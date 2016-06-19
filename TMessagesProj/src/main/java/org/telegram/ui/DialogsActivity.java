@@ -121,6 +121,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private DialogsActivityDelegate delegate;
 
     //Samsumg Pass
+    private boolean isSamsungDevice;
     private ActionBarMenuItem item;
     private Spass spass;
     private SpassFingerprint spassFingerprint;
@@ -233,13 +234,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             this.spass = new Spass();
             this.spass.initialize(context);
             this.spassFingerprint = new SpassFingerprint(this.getParentActivity());
+
+            boolean isFeatureEnabled = spass.isFeatureEnabled(Spass.DEVICE_FINGERPRINT);
+            if(isFeatureEnabled){
+                spassFingerprint = new SpassFingerprint(context);
+            }
+            isSamsungDevice = true;
         }catch (Exception e){
             e.printStackTrace();
-        }
-
-        boolean isFeatureEnabled = spass.isFeatureEnabled(Spass.DEVICE_FINGERPRINT);
-        if(isFeatureEnabled){
-            spassFingerprint = new SpassFingerprint(context);
+            isSamsungDevice = false;
         }
 
         Theme.loadRecources(context);
@@ -729,12 +732,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         });
 
 
-        //TODO find a good icon for it: Floating button
         unlockButton = new ImageView(context);
         unlockButton.setVisibility(onlySelect ? View.GONE : View.VISIBLE);
         unlockButton.setScaleType(ImageView.ScaleType.CENTER);
         unlockButton.setBackgroundResource(R.drawable.floating_states);
-        unlockButton.setImageResource(R.drawable.floating_pencil);
+        unlockButton.setImageResource(R.drawable.padlock);
         if (Build.VERSION.SDK_INT >= 21) {
             StateListAnimator animator = new StateListAnimator();
             animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(unlockButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
@@ -748,22 +750,27 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             });
         }
-        frameLayout.addView(unlockButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM, LocaleController.isRTL ? 14 : 0, 0, LocaleController.isRTL ? 0 : 14, 14));
+        frameLayout.addView(unlockButton, LayoutHelper.createFrame(
+                LayoutHelper.WRAP_CONTENT,
+                LayoutHelper.WRAP_CONTENT,
+                (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM, LocaleController.isRTL ? 0 : 14, 0, LocaleController.isRTL ? 14 : 0, 14));
         unlockButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                boolean isFeatureEnabled = spass.isFeatureEnabled(Spass.DEVICE_FINGERPRINT);
-                if(isFeatureEnabled && !BiometryController.getInstance().isUnlocked()){
-                    boolean mHasRegisteredFinger = spassFingerprint.hasRegisteredFinger();
-                    if(mHasRegisteredFinger){
-                        spassFingerprint.startIdentifyWithDialog(context, listener, false);
-                    }else{
-                        AlertDialog.Builder builder = new AlertDialog.Builder(DialogsActivity.this.getParentActivity());
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setMessage(LocaleController.getString("PermissionNoFingerprint", R.string.PermissionNoFingerprint));
-                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-                        showDialog(permissionDialog = builder.create());
+                if(isSamsungDevice){
+                    boolean isFeatureEnabled = spass.isFeatureEnabled(Spass.DEVICE_FINGERPRINT);
+                    if(isFeatureEnabled && !BiometryController.getInstance().isUnlocked()){
+                        boolean mHasRegisteredFinger = spassFingerprint.hasRegisteredFinger();
+                        if(mHasRegisteredFinger){
+                            spassFingerprint.startIdentifyWithDialog(context, listener, false);
+                        }else{
+                            AlertDialog.Builder builder = new AlertDialog.Builder(DialogsActivity.this.getParentActivity());
+                            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                            builder.setMessage(LocaleController.getString("PermissionNoFingerprint", R.string.PermissionNoFingerprint));
+                            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                            showDialog(permissionDialog = builder.create());
+                        }
                     }
                 }else{
                     BiometryController.getInstance().setUnlocked(!BiometryController.getInstance().isUnlocked());

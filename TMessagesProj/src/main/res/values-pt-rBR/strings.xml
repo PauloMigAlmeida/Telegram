@@ -3,8 +3,8 @@
 <!--https://www.transifex.com/projects/p/telegram/language/pt_BR/members/-->
 
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">Finger2View</string>
+    <string name="AppNameBeta">Finger2View Beta</string>
     <string name="LanguageName">Português (Brasil)</string>
     <string name="LanguageNameInEnglish">Português (Brasil)</string>
     <string name="LanguageCode">pt_BR</string>
@@ -16,8 +16,8 @@
     <!--code enter view-->
     <string name="YourCode">Verificação do tel.</string>
     <string name="SentSmsCode">Enviamos uma SMS com um código de ativação para <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.</string>
-    <string name="SentAppCode">Nós enviamos o código para o aplicativo do <![CDATA[<b>]]>Telegram<![CDATA[</b>]]> em seu outro dispositivo.</string>
-    <string name="SentCallCode">Enviamos uma ligação de ativação para <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nNão atenda, o Telegram processará automaticamente.</string>
+    <string name="SentAppCode">Nós enviamos o código para o aplicativo do <![CDATA[<b>]]>Finger2View<![CDATA[</b>]]> em seu outro dispositivo.</string>
+    <string name="SentCallCode">Enviamos uma ligação de ativação para <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nNão atenda, o Finger2View processará automaticamente.</string>
     <string name="SentCallOnly">Nós te ligaremos em <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> para ditar o código.</string>
     <string name="CallText">Vamos te ligar em %1$d:%2$02d</string>
     <string name="SmsText">Vamos te enviar uma SMS em %1$d:%2$02d</string>
@@ -56,7 +56,7 @@
     <string name="HiddenName">Conta Excluída</string>
     <string name="SelectChat">Selecione um Chat</string>
     <string name="PhotoTip">Toque e segure para ver</string>
-    <string name="CompatibilityChat">%1$s está usando uma versão mais antiga do Telegram, por isso fotos secretas serão mostradas em modo de compatibilidade.\n\nAssim que %2$s atualizar o Telegram, fotos com timers de 1 minuto ou menos passarão a funcionar no modo ‘Toque e segure para ver’, e você será notificado caso a outra pessoa salve a tela.</string>
+    <string name="CompatibilityChat">%1$s está usando uma versão mais antiga do Finger2View, por isso fotos secretas serão mostradas em modo de compatibilidade.\n\nAssim que %2$s atualizar o Finger2View, fotos com timers de 1 minuto ou menos passarão a funcionar no modo ‘Toque e segure para ver’, e você será notificado caso a outra pessoa salve a tela.</string>
     <string name="SearchMessages">MENSAGENS</string>
     <string name="Search">Busca</string>
     <string name="MuteNotifications">Silenciar notificações</string>
@@ -108,8 +108,8 @@
     <string name="Comments">Comentários</string>
     <string name="CommentsInfo">Se você habilitar comentários, pessoas poderão discutir seu post no canal.</string>
     <string name="AddMutual">Adicionar contatos no canal</string>
-    <string name="ChannelUsernameHelp">Pessoas podem compartilhar esse link com outros e encontrar seu canal usando a busca do Telegram.</string>
-    <string name="MegaUsernameHelp">Pessoas podem compartilhar esse link com outros e encontrar o seu grupo usando a busca do Telegram.</string>
+    <string name="ChannelUsernameHelp">Pessoas podem compartilhar esse link com outros e encontrar seu canal usando a busca do Finger2View.</string>
+    <string name="MegaUsernameHelp">Pessoas podem compartilhar esse link com outros e encontrar o seu grupo usando a busca do Finger2View.</string>
     <string name="ChannelUsernamePlaceholder">link</string>
     <string name="ChannelPrivateLinkHelp">Pessoas podem entrar em seu canal com este link. Você pode desativar o link quando quiser.</string>
     <string name="MegaPrivateLinkHelp">Pessoas podem entrar em seu canal com este link. Você pode desativar o link quando quiser.</string>
@@ -177,7 +177,7 @@
     <string name="ChannelRemoveUserAdmin">Remover</string>
     <string name="ChannelMembersInfo">Somente os administradores do canal podem ver essa lista.</string>
     <string name="ChannelAdminNotParticipant">Esse usuário não entrou no seu canal ainda. Você deseja enviar um convite?</string>
-    <string name="ChannelLinkInfo">Qualquer um com Telegram instalado poderá entrar no seu canal abrindo este link.</string>
+    <string name="ChannelLinkInfo">Qualquer um com Finger2View instalado poderá entrar no seu canal abrindo este link.</string>
     <string name="ChannelAdminsInfo">Você pode adicionar administradores para ajudar você a gerenciar seu canal. Aperte e segure para removê-los.</string>
     <string name="ChannelJoinTo">Você deseja entrar no canal \'%1$s\'?</string>
     <string name="ChannelCantOpenPrivate">Desculpe, esta conversa não pode mais ser acessada.</string>
@@ -264,7 +264,7 @@
     <string name="SendingPhoto">enviando foto...</string>
     <string name="SendingVideoStatus">enviando vídeo...</string>
     <string name="SendingFile">enviando arquivo...</string>
-    <string name="GotAQuestion">Tem alguma dúvida\nsobre o Telegram?</string>
+    <string name="GotAQuestion">Tem alguma dúvida\nsobre o Finger2View?</string>
     <string name="ChatTakePhoto">Tirar foto</string>
     <string name="ChatGallery">Galeria</string>
     <string name="ChatLocation">Localização</string>
@@ -370,8 +370,8 @@
     <string name="NotificationGroupKickMember">%1$s removeu %3$s do grupo %2$s</string>
     <string name="NotificationGroupKickYou">%1$s removeu você do grupo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s saiu do grupo %2$s</string>
-    <string name="NotificationContactJoined">%1$s entrou para o Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nNós detectamos que alguém acessou a sua conta a partir de um novo aparelho em %2$s\n\nAparelho: %3$s\nLocalização: %4$s\n\nSe não foi você, você pode ir em Configurações - Privacidade e Segurança - Sessões, e terminar aquela sessão.\n\nSe você acha que alguém acessou a sua conta contra a sua vontade, você pode habilitar a verificação em duas etapas nas configurações de Privacidade e Segurança.\n\nAtenciosamente,\nEquipe Telegram</string>
+    <string name="NotificationContactJoined">%1$s entrou para o Finger2View!</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nNós detectamos que alguém acessou a sua conta a partir de um novo aparelho em %2$s\n\nAparelho: %3$s\nLocalização: %4$s\n\nSe não foi você, você pode ir em Configurações - Privacidade e Segurança - Sessões, e terminar aquela sessão.\n\nSe você acha que alguém acessou a sua conta contra a sua vontade, você pode habilitar a verificação em duas etapas nas configurações de Privacidade e Segurança.\n\nAtenciosamente,\nEquipe Finger2View</string>
     <string name="NotificationContactNewPhoto">%1$s atualizou a foto do perfil</string>
     <string name="NotificationInvitedToGroupByLink">%1$s entrou para o grupo %2$s via link de convite</string>
     <string name="Reply">Responder</string>
@@ -403,7 +403,7 @@
     <!--contacts view-->
     <string name="SelectContact">Selecionar Contato</string>
     <string name="NoContacts">Ainda não há contatos</string>
-    <string name="InviteText">Ei, vamos mudar para o Telegram: https://telegram.org/dl</string>
+    <string name="InviteText">Ei, vamos mudar para o Finger2View: https://telegram.org/dl</string>
     <string name="TodayAt">às</string>
     <string name="YesterdayAt">ontem às</string>
     <string name="Online">online</string>
@@ -435,7 +435,7 @@
     <string name="RevokeLink">Desativar Link</string>
     <string name="CopyLink">Copiar Link</string>
     <string name="ShareLink">Compartilhar Link</string>
-    <string name="LinkInfo">Qualquer um com Telegram instalado poderá entrar no seu grupo abrindo este link.</string>
+    <string name="LinkInfo">Qualquer um com Finger2View instalado poderá entrar no seu grupo abrindo este link.</string>
     <!--set admins view-->
     <string name="SetAdminsTitle">Administradores de Conversas</string>
     <string name="SetAdminsAll">Todos São Administradores</string>
@@ -487,7 +487,7 @@
     <string name="UsernameInvalidShort">O nome de usuário deve ter pelo menos 5 caracteres.</string>
     <string name="UsernameInvalidLong">O nome de usuário não pode exceder 32 caracteres.</string>
     <string name="UsernameInvalidStartNumber">Desculpe, o nome de usuário não pode começar com um número.</string>
-    <string name="UsernameHelp">Você pode escolher um nome de usuário no <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Assim, outras pessoas poderão te encontrar pelo nome de usuário e entrar em contato sem precisar saber seu telefone. <![CDATA[<br><br>]]>Você pode usar <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> e underline. O tamanho mínimo é <![CDATA[<b>]]>5<![CDATA[</b>]]> caracteres.</string>
+    <string name="UsernameHelp">Você pode escolher um nome de usuário no <![CDATA[<b>]]>Finger2View<![CDATA[</b>]]>. Assim, outras pessoas poderão te encontrar pelo nome de usuário e entrar em contato sem precisar saber seu telefone. <![CDATA[<br><br>]]>Você pode usar <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> e underline. O tamanho mínimo é <![CDATA[<b>]]>5<![CDATA[</b>]]> caracteres.</string>
     <string name="UsernameChecking">Verificando nome de usuário...</string>
     <string name="UsernameAvailable">%1$s está disponível.</string>
     <string name="UsernameEmpty">Nenhum</string>
@@ -541,13 +541,13 @@
     <string name="SendByEnter">Enviar usando \'Enter\'</string>
     <string name="TerminateAllSessions">Terminar todas as outras sessões</string>
     <string name="Events">Eventos</string>
-    <string name="ContactJoined">Contato entrou para o Telegram</string>
+    <string name="ContactJoined">Contato entrou para o Finger2View</string>
     <string name="PinnedMessages">Mensagens Fixadas</string>
     <string name="Language">Idioma</string>
-    <string name="AskAQuestionInfo">Por favor entenda que o suporte do Telegram é feito por voluntários. Tentaremos responder o mais rápido possível, mas poderemos demorar um pouco.<![CDATA[<br><br>]]>Por favor verifique a <![CDATA[<a href=\"https://telegram.org/faq#general\">página de perguntas frequentes do Telegram</a>]]>: há dicas e respostas para a maioria dos <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">problemas</a>]]>.</string>
+    <string name="AskAQuestionInfo">Por favor entenda que o suporte do Finger2View é feito por voluntários. Tentaremos responder o mais rápido possível, mas poderemos demorar um pouco.<![CDATA[<br><br>]]>Por favor verifique a <![CDATA[<a href=\"https://telegram.org/faq#general\">página de perguntas frequentes do Finger2View</a>]]>: há dicas e respostas para a maioria dos <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">problemas</a>]]>.</string>
     <string name="AskButton">Pergunte a um voluntário</string>
-    <string name="TelegramFaq">Perguntas frequentes</string>
-    <string name="TelegramFaqUrl">https://telegram.org/faq</string>
+    <string name="Finger2ViewFaq">Perguntas frequentes</string>
+    <string name="Finger2ViewFaqUrl">https://telegram.org/faq</string>
     <string name="PrivacyPolicy">Política de Privacidade</string>
     <string name="PrivacyPolicyUrl">https://telegram.org/privacy</string>
     <string name="DeleteLocalization">Apagar localização?</string>
@@ -557,7 +557,7 @@
     <string name="NotificationsService">Serviço Manter-Ativo</string>
     <string name="NotificationsServiceInfo">Reiniciar o app quando desligado pelo usuário ou pelo sistema. Isso irá garantir que o app mostre as notificações.</string>
     <string name="NotificationsServiceConnection">Conexão em Segundo Plano</string>
-    <string name="NotificationsServiceConnectionInfo">Manter uma conexão de baixo impacto para o Telegram receber notificações. Habilite para notificações mais confiáveis.</string>
+    <string name="NotificationsServiceConnectionInfo">Manter uma conexão de baixo impacto para o Finger2View receber notificações. Habilite para notificações mais confiáveis.</string>
     <string name="SortBy">Ordenar Por</string>
     <string name="ImportContacts">Importar Contatos</string>
     <string name="SortFirstName">Primeiro nome</string>
@@ -589,12 +589,12 @@
     <string name="NotificationsPriorityMax">Máxima</string>
     <string name="RepeatNotificationsNever">Nunca</string>
     <string name="RepeatNotifications">Repetir Notificações</string>
-    <string name="PhoneNumberHelp">Você pode alterar seu número do Telegram aqui. Sua conta e todos os seus dados — mensagens, mídia, contatos, etc. serão movidos para o novo número.\n\n<![CDATA[<b>Importante:</b>]]> todos os contatos do Telegram terão seu <![CDATA[<b>novo número</b>]]> adicionado às suas lista de contatos, desde que eles tenham seu número antigo e você não os tenha bloqueado no Telegram.</string>
-    <string name="PhoneNumberAlert">Todos os seus contatos do Telegram terão seu novo número adicionado às suas listas de contatos, desde que eles tenham seu antigo número e você não os tenha bloqueado no Telegram.</string>
+    <string name="PhoneNumberHelp">Você pode alterar seu número do Finger2View aqui. Sua conta e todos os seus dados — mensagens, mídia, contatos, etc. serão movidos para o novo número.\n\n<![CDATA[<b>Importante:</b>]]> todos os contatos do Finger2View terão seu <![CDATA[<b>novo número</b>]]> adicionado às suas lista de contatos, desde que eles tenham seu número antigo e você não os tenha bloqueado no Finger2View.</string>
+    <string name="PhoneNumberAlert">Todos os seus contatos do Finger2View terão seu novo número adicionado às suas listas de contatos, desde que eles tenham seu antigo número e você não os tenha bloqueado no Finger2View.</string>
     <string name="PhoneNumberChange">ALTERAR NÚMERO</string>
     <string name="ChangePhoneNewNumber">Novo número</string>
     <string name="ChangePhoneHelp">Vamos enviar uma SMS com um código de confirmação para o seu novo número.</string>
-    <string name="ChangePhoneNumberOccupied">O número %1$s já possui uma conta do Telegram. Por favor, exclua esta conta antes de migrar para o novo número.</string>
+    <string name="ChangePhoneNumberOccupied">O número %1$s já possui uma conta do Finger2View. Por favor, exclua esta conta antes de migrar para o novo número.</string>
     <string name="NotificationsOther">Outro</string>
     <string name="NotificationsDisabled">Desativado</string>
     <string name="VibrationDisabled">Desativado</string>
@@ -620,7 +620,7 @@
     <string name="CacheSettings">Configurações de Cache</string>
     <string name="LocalDatabase">Banco de Dados Local</string>
     <string name="LocalDatabaseClear">Limpar todos os textos em cache?</string>
-    <string name="LocalDatabaseInfo">Limpar o banco de dados local apagará todos os textos das mensagens em cache e compactará o banco de dados para economizar espaço. O Telegram precisa de alguns dados para trabalhar, então o tamanho do banco não vai chegar a zero.\n\nEssa operação pode demorar alguns minutos para ser concluída.</string>
+    <string name="LocalDatabaseInfo">Limpar o banco de dados local apagará todos os textos das mensagens em cache e compactará o banco de dados para economizar espaço. O Finger2View precisa de alguns dados para trabalhar, então o tamanho do banco não vai chegar a zero.\n\nEssa operação pode demorar alguns minutos para ser concluída.</string>
     <string name="ClearMediaCache">Limpar Cache</string>
     <string name="CacheClear">Limpar</string>
     <string name="CalculatingSize">Calculando...</string>
@@ -632,13 +632,13 @@
     <string name="LocalCache">Outros arquivos</string>
     <string name="CacheEmpty">Vazio</string>
     <string name="KeepMedia">Manter Mídias</string>
-    <string name="KeepMediaInfo">Fotos, vídeos e outros arquivos da nuvem que você <![CDATA[<b>não acessou</b>]]> durante esse período serão removidos deste dispositivo para economizar espaço em disco.\n\nTodas as mídias permanecerão na nuvem do Telegram e poderão ser baixadas novamente conforme necessário.</string>
+    <string name="KeepMediaInfo">Fotos, vídeos e outros arquivos da nuvem que você <![CDATA[<b>não acessou</b>]]> durante esse período serão removidos deste dispositivo para economizar espaço em disco.\n\nTodas as mídias permanecerão na nuvem do Finger2View e poderão ser baixadas novamente conforme necessário.</string>
     <string name="KeepMediaForever">Permanentemente</string>
     <!--sessions view-->
     <string name="SessionsTitle">Sessões Ativas</string>
     <string name="CurrentSession">Sessão atual</string>
     <string name="NoOtherSessions">Nenhuma outra sessão ativa</string>
-    <string name="NoOtherSessionsInfo">Você pode entrar no Telegram a partir de outro celular, tablet ou computador usando o mesmo número de telefone. Todos os seus dados serão sincronizados instantaneamente.</string>
+    <string name="NoOtherSessionsInfo">Você pode entrar no Finger2View a partir de outro celular, tablet ou computador usando o mesmo número de telefone. Todos os seus dados serão sincronizados instantaneamente.</string>
     <string name="OtherSessions">Sessões Ativas</string>
     <string name="SessionsInfo">Controle suas sessões em outros aparelhos.</string>
     <string name="TerminateSessionInfo">Toque em uma sessão para terminá-la.</string>
@@ -648,7 +648,7 @@
     <string name="Passcode">Senha de Bloqueio</string>
     <string name="ChangePasscode">Alterar Senha</string>
     <string name="ChangePasscodeInfo">Quando você define uma senha adicional, um ícone de cadeado aparece na página de chats. Clique para bloquear e desbloquear o app.\n\nNota: se você esquecer a sua senha, terá de excluir e reinstalar o app. Todos os chats secretos serão perdidos.</string>
-    <string name="ChangePasscodeAlert">Você verá o ícone do cadeado na página de chats. Clique para bloquear seu app do Telegram com a sua nova senha.</string>
+    <string name="ChangePasscodeAlert">Você verá o ícone do cadeado na página de chats. Clique para bloquear seu app do Finger2View com a sua nova senha.</string>
     <string name="PasscodePIN">PIN</string>
     <string name="PasscodePassword">Senha</string>
     <string name="EnterCurrentPasscode">Insira sua senha atual</string>
@@ -757,7 +757,7 @@
     <string name="YourEmailInfo">Por favor, adicione um e-mail válido. Essa é a única forma de recuperar uma senha esquecida.</string>
     <string name="YourEmailSkip">Pular</string>
     <string name="YourEmailSkipWarning">Atenção</string>
-    <string name="YourEmailSkipWarningText">É sério!\n\nSe você esquecer a sua senha, você perderá o acesso a sua conta do Telegram. Não há nenhuma forma de recuperá-la.</string>
+    <string name="YourEmailSkipWarningText">É sério!\n\nSe você esquecer a sua senha, você perderá o acesso a sua conta do Finger2View. Não há nenhuma forma de recuperá-la.</string>
     <string name="YourEmailAlmostThere">Quase lá!</string>
     <string name="YourEmailAlmostThereText">Por favor, verifique o seu e-mail (não esqueça da pasta spam) para completar a configuração da verificação em duas etapas.</string>
     <string name="YourPasswordSuccess">Pronto!</string>
@@ -901,7 +901,7 @@
     <string name="ActionAddUserSelf">un1 retornou ao grupo</string>
     <string name="ActionAddUserSelfMega">un1 entrou no grupo</string>
     <string name="ActionAddUserSelfYou">Você retornou ao grupo</string>
-    <string name="UnsupportedMedia">Esta mensagem não é suportada na sua versão do Telegram. Para visualizá-la atualize seu aplicativo em https://telegram.org/update</string>
+    <string name="UnsupportedMedia">Esta mensagem não é suportada na sua versão do Finger2View. Para visualizá-la atualize seu aplicativo em https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Vídeo</string>
     <string name="AttachGif">GIF</string>
@@ -925,7 +925,7 @@
     <string name="NoPlayerInstalled">Você não possui um reprodutor de vídeo, instale um para continuar</string>
     <string name="NoMailInstalled">Por favor, envie um email para sms@stel.com e conte-nos sobre seu problema.</string>
     <string name="NoHandleAppInstalled">Você não possui um aplicativo que suporte o tipo de arquivo \'%1$s\', por favor instale um para continuar</string>
-    <string name="InviteUser">Este usuário ainda não possui Telegram, deseja enviar um convite?</string>
+    <string name="InviteUser">Este usuário ainda não possui Finger2View, deseja enviar um convite?</string>
     <string name="AreYouSure">Você tem certeza?</string>
     <string name="AddToTheGroupTitle">Adcione %1$s ao chat %2$s?</string>
     <string name="AddToTheGroupForwardCount">Número de mensagens antigas para encaminhar:</string>
@@ -934,7 +934,7 @@
     <string name="ForwardMessagesTo">Encaminhar mensagem para %1$s?</string>
     <string name="SendMessagesTo">Enviar mensagens para %1$s?</string>
     <string name="SendContactTo">Enviar contato para %1$s?</string>
-    <string name="AreYouSureLogout">Você tem certeza que desejar sair?\n\nSaiba que você pode usar o Telegram em vários dispositivos de uma vez.\n\nLembre-se, sair apaga todos os seus Chats Secretos.</string>
+    <string name="AreYouSureLogout">Você tem certeza que desejar sair?\n\nSaiba que você pode usar o Finger2View em vários dispositivos de uma vez.\n\nLembre-se, sair apaga todos os seus Chats Secretos.</string>
     <string name="AreYouSureSessions">Você tem certeza que deseja terminar todas as outras sessões?</string>
     <string name="AreYouSureDeleteAndExit">Você tem certeza que apagar e sair do grupo?</string>
     <string name="AreYouSureDeleteThisChat">Você tem certeza que deseja apagar esta conversa?</string>
@@ -960,22 +960,22 @@
     <string name="SendContactToGroup">Enviar contato para %1$s?</string>
     <string name="ForwardMessagesToGroup">Encaminhar mensagem para %1$s?</string>
     <string name="FeatureUnavailable">Desculpe, esta funcionalidade não está disponível para seu país.</string>
-    <string name="NoUsernameFound">Não há conta do Telegram com esse nome de usuário</string>
+    <string name="NoUsernameFound">Não há conta do Finger2View com esse nome de usuário</string>
     <string name="BotCantJoinGroups">Esse bot não pode entrar em grupos.</string>
-    <string name="SecretLinkPreviewAlert">Você gostaria de ativar a pré-visualização estendida de links em Chats Secretos? Note que a pré-visualização é gerada nos servidores do Telegram.</string>
+    <string name="SecretLinkPreviewAlert">Você gostaria de ativar a pré-visualização estendida de links em Chats Secretos? Note que a pré-visualização é gerada nos servidores do Finger2View.</string>
     <string name="SecretChatContextBotAlert">Os bots integrados são fornecidos por desenvolvedores terceiros. Para o bot funcionar, os símbolos que você digita depois do nome de usuário do bot são enviados para o respectivo desenvolvedor.</string>
     <string name="RaiseToSpeakAlert">Gostaria de habilitar o \"Levantar para Falar\" para mensagens de voz?</string>
     <string name="EditMessageError">Desculpe, você não pode editar essa mensagem.</string>
-    <string name="AllowReadSms">Permita o acesso às SMS ao Telegram, assim podemos automaticamente adicionar o código para você.</string>
-    <string name="AllowReadCall">Permita o acesso às ligações ao Telegram, assim podemos automaticamente adicionar o código para você.</string>
-    <string name="AllowReadCallAndSms">Permita o acesso às SMS e ligações ao Telegram, assim podemos automaticamente adicionar o código para você.</string>
+    <string name="AllowReadSms">Permita o acesso às SMS ao Finger2View, assim podemos automaticamente adicionar o código para você.</string>
+    <string name="AllowReadCall">Permita o acesso às ligações ao Finger2View, assim podemos automaticamente adicionar o código para você.</string>
+    <string name="AllowReadCallAndSms">Permita o acesso às SMS e ligações ao Finger2View, assim podemos automaticamente adicionar o código para você.</string>
     <string name="UserRestricted">Você não tem permissão para isso.</string>
     <!--permissions-->
-    <string name="PermissionContacts">Telegram precisa acessar seus contatos para que você possa se conectar aos seus amigos em todos os seus dispositivos.</string>
-    <string name="PermissionStorage">Telegram precisa acessar seu armazenamento para que você possa enviar e salvar fotos, vídeos, músicas e outras mídias.</string>
-    <string name="PermissionNoAudio">Telegram precisa acessar seu microfone para que você possa enviar mensagens de voz.</string>
-    <string name="PermissionNoLocation">Telegram precisa acessar sua localização para que você possa compartilhar com seus amigos.</string>
-    <string name="PermissionNoLocationPosition">O Telegram precisa acessar sua localização</string>
+    <string name="PermissionContacts">Finger2View precisa acessar seus contatos para que você possa se conectar aos seus amigos em todos os seus dispositivos.</string>
+    <string name="PermissionStorage">Finger2View precisa acessar seu armazenamento para que você possa enviar e salvar fotos, vídeos, músicas e outras mídias.</string>
+    <string name="PermissionNoAudio">Finger2View precisa acessar seu microfone para que você possa enviar mensagens de voz.</string>
+    <string name="PermissionNoLocation">Finger2View precisa acessar sua localização para que você possa compartilhar com seus amigos.</string>
+    <string name="PermissionNoLocationPosition">O Finger2View precisa acessar sua localização</string>
     <string name="PermissionOpenSettings">CONFIGURAÇÕES</string>
     <string name="PermissionNoFingerprint">Você não tem uma digital cadastrada nesse aparelho.</string>
     <string name="PermissionFingerprintAuthFailed">Autenticação falhou, tente novamente mais tarde.</string>
@@ -1200,4 +1200,5 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
+    <string name="GroupCreateBlockedFunctionality">Esta função não é permitida enquanto o app está bloqueado.</string>
 </resources>

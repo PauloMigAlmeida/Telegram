@@ -8,10 +8,10 @@
     {
       "client_info": {
         "mobilesdk_app_id": "1:760348033671:android:f6afd7b67eae3860",
-        "client_id": "android:org.telegram.messenger",
+        "client_id": "android:co.finger2view.app",
         "client_type": 1,
         "android_client_info": {
-          "package_name": "org.telegram.messenger",
+          "package_name": "co.finger2view.app",
           "certificate_hash": []
         }
       },
